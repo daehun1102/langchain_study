@@ -36,12 +36,12 @@
 ### 02 Tutorials
 공식 가이드를 기반으로 한 코드 구현 및 설명입니다. Jupyter Notebook으로 정리합니다.
 
-### 03 Lab
+### 03 PlayGround
 학습된 기술을 실제 서비스 환경(Full-stack)에 이식하는 통합 실험 공간입니다. (예정)
 * **AI Engine:** FastAPI 기반의 LangGraph 추론 엔진
 * **Service:** Spring Boot 백엔드 연동 및 PostgreSQL 상태 저장
 * **Interface:** Vue.js 기반의 대화형 UI
-
+* **LangStudio** 위 세가지로 구축하는것이 아닌 빠르게 LangGraph 챗봇 형태로 테스트
 
 
 ## Tech Stack
@@ -52,5 +52,3 @@
 * **Frontend:** Vue.js
 * **Database:** PostgreSQL, Redis, Vector Stores
 * **Infrastructure:** Docker, AWS
-
-

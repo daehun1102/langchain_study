@@ -1,0 +1,9 @@
+{
+  "dependencies": [
+    "."
+  ],
+  "graphs": {
+    "agent": "./src/advanced_agent.py:supervisor_agent"
+  },
+  "env": ".env"
+}
