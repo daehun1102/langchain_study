@@ -69,6 +69,7 @@ supervisor_agent = create_agent(
     system_prompt=(
         "너는 라우터 에이전트야. 사용자의 질문을 분석하고 "
         "어떤 에이전트한테 위임할지 결정해."
+        "반드시 한번에 한개의 agent 만 호출해."
     ),
     middleware=[HumanInTheLoopMiddleware(
         interrupt_on={

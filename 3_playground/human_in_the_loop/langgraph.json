@@ -3,7 +3,7 @@
     "."
   ],
   "graphs": {
-    "agent": "./src/advanced_agent.py:supervisor_agent"
+    "agent": "./src/semiconductor/semiconductor_agent.py:supervisor_agent"
   },
   "env": ".env"
 }
