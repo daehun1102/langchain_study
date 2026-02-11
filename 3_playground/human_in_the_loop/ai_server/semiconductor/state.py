@@ -1,26 +1,17 @@
-from typing import Annotated, Literal, TypedDict
-import operator
+from typing import TypedDict, Optional, Dict, Any
 
 
-class AgentInput(TypedDict):
-    """각 서브 에이전트를 위한 간단한 입력 상태입니다."""
-    query: str
-
-
-class AgentOutput(TypedDict):
-    """각 서브 에이전트의 출력입니다."""
-    source: str
-    result: str
-
-
-class Classification(TypedDict):
-    """단일 라우팅 결정: 어떤 쿼리로 어떤 에이전트를 호출할지 결정합니다."""
-    source: Literal["photo", "etch", "deposition", "history"]
-    query: str
-
-
-class RouterState(TypedDict):
-    query: str
-    classifications: list[Classification]
-    results: Annotated[list[AgentOutput], operator.add] 
-    final_answer: str
+class GraphState(TypedDict, total=False):
+    # 입력
+    user_request: str
+    # 분류
+    classification: Optional[str]
+    # 중간 결과
+    history_summary: Optional[str]
+    routing_decision: Optional[Dict[str, Any]]
+    routed_request: Optional[str]
+    # 최종 결과
+    process_result: Optional[str]
+    final_answer: Optional[str]
+    # Human-in-the-loop
+    router_human_review: Optional[Dict[str, Any]]
