@@ -1,7 +1,8 @@
 <script setup>
 import { ref, watch } from 'vue'
 
-const 
+const props = defineProps({
+  disabled: Boolean,
   loading: Boolean,
 })
 

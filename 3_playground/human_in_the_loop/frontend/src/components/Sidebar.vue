@@ -8,7 +8,7 @@ const props = defineProps({
   isOpen: Boolean,
 })
 
-const emit = defineEmits(['new-thread', 'select-thread', 'toggle'])
+const emit = defineEmits(['new-thread', 'select-thread', 'delete-thread', 'toggle'])
 
 const formattedThreads = computed(() =>
   props.threads.map(t => ({
@@ -78,6 +78,15 @@ const formattedThreads = computed(() =>
             <span class="thread-title">{{ thread.title }}</span>
             <span class="thread-time">{{ thread.time }}</span>
           </div>
+          <button
+            class="thread-delete-btn"
+            @click.stop="emit('delete-thread', thread.id)"
+            title="대화 삭제"
+          >
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <path d="M4 4L10 10M10 4L4 10" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+            </svg>
+          </button>
         </div>
 
         <div v-if="!threads.length" class="thread-empty">
@@ -250,6 +259,32 @@ const formattedThreads = computed(() =>
   display: flex;
   flex-direction: column;
   min-width: 0;
+  flex: 1;
+}
+
+.thread-delete-btn {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  opacity: 0;
+  transition: all 0.15s ease;
+}
+
+.thread-item:hover .thread-delete-btn {
+  opacity: 1;
+}
+
+.thread-delete-btn:hover {
+  background: rgba(255, 80, 80, 0.15);
+  color: #ff5050;
 }
 
 .thread-title {

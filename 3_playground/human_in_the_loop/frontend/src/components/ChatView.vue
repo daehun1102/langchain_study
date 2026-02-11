@@ -67,6 +67,7 @@ function onEdit(toolCallId, newArgs) {
         <HumanApproval
           v-if="pendingApproval"
           :toolCalls="pendingApproval.toolCalls"
+          :description="pendingApproval.description"
           @approve="onApprove"
           @reject="onReject"
           @edit="onEdit"

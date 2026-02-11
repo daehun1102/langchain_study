@@ -1,17 +1,51 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted, watch } from 'vue'
 import Sidebar from './components/Sidebar.vue'
 import ChatView from './components/ChatView.vue'
 import { client } from './api/langgraph.js'
+
+const THREADS_STORAGE_KEY = 'fab_threads'
 
 const threads = ref([])
 const activeThreadId = ref(null)
 const isConnected = ref(false)
 const sidebarOpen = ref(true)
 
+function saveThreads() {
+  localStorage.setItem(THREADS_STORAGE_KEY, JSON.stringify(threads.value))
+}
+
+function loadThreads() {
+  const saved = localStorage.getItem(THREADS_STORAGE_KEY)
+  if (saved) {
+    try {
+      threads.value = JSON.parse(saved)
+    } catch {
+      threads.value = []
+    }
+  }
+}
+
+function handleTitleUpdate(e) {
+  const { threadId, title } = e.detail
+  const thread = threads.value.find(t => t.id === threadId)
+  if (thread) {
+    thread.title = title
+    saveThreads()
+  }
+}
+
 onMounted(async () => {
+  loadThreads()
   isConnected.value = await client.healthCheck()
+  window.addEventListener('thread-title-update', handleTitleUpdate)
 })
+
+onUnmounted(() => {
+  window.removeEventListener('thread-title-update', handleTitleUpdate)
+})
+
+watch(threads, saveThreads, { deep: true })
 
 async function createNewThread() {
   try {
@@ -38,6 +72,14 @@ function selectThread(id) {
   activeThreadId.value = id
 }
 
+function deleteThread(id) {
+  threads.value = threads.value.filter(t => t.id !== id)
+  localStorage.removeItem(`thread_messages_${id}`)
+  if (activeThreadId.value === id) {
+    activeThreadId.value = threads.value.length > 0 ? threads.value[0].id : null
+  }
+}
+
 function toggleSidebar() {
   sidebarOpen.value = !sidebarOpen.value
 }
@@ -56,6 +98,7 @@ function toggleSidebar() {
       :isOpen="sidebarOpen"
       @new-thread="createNewThread"
       @select-thread="selectThread"
+      @delete-thread="deleteThread"
       @toggle="toggleSidebar"
     />
 

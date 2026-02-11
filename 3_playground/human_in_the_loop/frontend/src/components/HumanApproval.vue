@@ -6,6 +6,10 @@ const props = defineProps({
     type: Array,
     default: () => [],
   },
+  description: {
+    type: String,
+    default: '',
+  },
 })
 
 const emit = defineEmits(['approve', 'reject', 'edit'])
@@ -79,6 +83,11 @@ function cancelReject() {
         <div class="approval-title">승인 대기중</div>
         <div class="approval-subtitle">에이전트가 도구를 실행하려 합니다</div>
       </div>
+    </div>
+
+    <!-- Interrupt description -->
+    <div v-if="description" class="approval-description">
+      {{ description }}
     </div>
 
     <!-- Tool call tabs if multiple -->
@@ -199,6 +208,18 @@ function cancelReject() {
   font-size: 0.78rem;
   color: var(--text-secondary);
   margin-top: 0.1rem;
+}
+
+/* Description */
+.approval-description {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0.65rem 0.85rem;
+  margin-bottom: 0.75rem;
+  line-height: 1.5;
 }
 
 /* Tool tabs */

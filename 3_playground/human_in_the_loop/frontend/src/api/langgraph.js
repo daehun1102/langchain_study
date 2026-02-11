@@ -48,29 +48,7 @@ class LangGraphClient {
     return this._json(`/threads/${threadId}/state`);
   }
 
-  /** Thread 상태 업데이트 (Human-in-the-loop 응답 등) */
-  async updateThreadState(threadId, values, asNode = null) {
-    const body = { values };
-    if (asNode) body.as_node = asNode;
-    return this._json(`/threads/${threadId}/state`, {
-      method: 'POST',
-      body: JSON.stringify(body),
-    });
-  }
-
   // ─── Run 실행 ──────────────────────────────────────────
-
-  /** Run 생성 (비동기) */
-  async createRun(threadId, input, config = {}) {
-    return this._json(`/threads/${threadId}/runs`, {
-      method: 'POST',
-      body: JSON.stringify({
-        assistant_id: this.graphId,
-        input,
-        config,
-      }),
-    });
-  }
 
   /** Run 스트리밍 — SSE 로 이벤트를 받아 콜백 호출 */
   async streamRun(threadId, input, { onEvent, onError, onComplete, config = {}, command = null } = {}) {
@@ -129,50 +107,35 @@ class LangGraphClient {
     }
   }
 
-  /** Interrupt 후 resume (Human-in-the-loop approve) */
+  /** Interrupt 후 resume (Human-in-the-loop) */
   async resumeRun(threadId, { onEvent, onError, onComplete, config = {}, command = null } = {}) {
     return this.streamRun(threadId, null, { onEvent, onError, onComplete, config, command });
   }
 
   // ─── Human-in-the-loop ─────────────────────────────────
 
-  /** Tool call 승인 — Command resume */
-  async approveToolCall(threadId, { onEvent, onError, onComplete, config = {} } = {}) {
+  /** Tool call 승인 — Command resume with approve */
+  async approveToolCall(threadId, callbacks = {}) {
     return this.resumeRun(threadId, {
-      onEvent,
-      onError,
-      onComplete,
-      config,
-      command: { resume: true },
+      ...callbacks,
+      command: { resume: { type: 'approve' } },
     });
   }
 
-  /** Tool call 거부 — state 에 reject 메시지 추가 후 resume */
-  async rejectToolCall(threadId, reason = '사용자가 거부했습니다.') {
-    // ToolMessage 로 reject 응답을 보냄
-    await this.updateThreadState(threadId, {
-      messages: [{
-        role: 'tool',
-        content: `REJECTED: ${reason}`,
-        tool_call_id: '__reject__',
-      }],
+  /** Tool call 거부 — Command resume with reject */
+  async rejectToolCall(threadId, reason = '사용자가 거부했습니다.', callbacks = {}) {
+    return this.resumeRun(threadId, {
+      ...callbacks,
+      command: { resume: { type: 'reject', message: reason } },
     });
   }
 
   /** Tool call 파라미터 수정 후 resume */
-  async editToolCall(threadId, toolCallId, newArgs) {
-    const state = await this.getThreadState(threadId);
-    // 마지막 AI 메시지의 tool_calls 에서 해당 ID 찾아 수정
-    const messages = state.values?.messages || [];
-    const lastAiMsg = [...messages].reverse().find(m => m.role === 'assistant' && m.tool_calls?.length);
-
-    if (lastAiMsg) {
-      const tc = lastAiMsg.tool_calls.find(tc => tc.id === toolCallId);
-      if (tc) {
-        tc.args = newArgs;
-      }
-      await this.updateThreadState(threadId, { messages: [lastAiMsg] });
-    }
+  async editToolCall(threadId, newArgs, callbacks = {}) {
+    return this.resumeRun(threadId, {
+      ...callbacks,
+      command: { resume: { type: 'edit', args: newArgs } },
+    });
   }
 
   // ─── 유틸리티 ──────────────────────────────────────────
