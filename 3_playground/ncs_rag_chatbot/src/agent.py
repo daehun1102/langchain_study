@@ -1,6 +1,11 @@
 from langchain.agents import create_agent
 from langchain.chat_models import init_chat_model
 from typing import List
+import sys
+import io
+
+# Windows 콘솔 인코딩 문제 해결
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
 
 class ChatAgent:
     """채팅 에이전트를 생성하고 실행하는 클래스"""
@@ -9,8 +14,18 @@ class ChatAgent:
         self.model = init_chat_model(model_name)
         if system_prompt is None:
             self.system_prompt = (
-                "너는 PDF 파일에서 정보를 검색하여 답변해주는 친절한 AI 어시스턴트야."
-                "사용자의 질의에 retrieve_context 도구를 적극적으로 사용해서 답변해줘."
+                "너는 NCS(국가직무능력표준) 문서에서 정보를 검색하여 답변해주는 친절한 AI 어시스턴트야.\n"
+                "사용자의 질의에 retrieve_context 도구를 적극적으로 사용해서 답변해줘.\n\n"
+                "## 메타데이터 필터링 가이드\n"
+                "retrieve_context 도구는 다음 필터를 지원해:\n"
+                "- main_category (대분류): '정보기술개발', '정보기술관리', '직업기초능력'\n"
+                "- sub_category (중분류): 'SW아키텍쳐', '응용SW엔지니어링', '임베디드SW엔지니어링', "
+                "'IT테스트', 'IT품질보증', 'IT프로젝트관리', '문제해결능력', '수리능력', '의사소통능력'\n"
+                "- source: 원본 파일명\n"
+                "- page: 특정 페이지 번호 (정수)\n\n"
+                "사용자가 특정 분야, 카테고리, 또는 페이지를 언급하면 "
+                "해당 필터를 사용하여 검색 범위를 좁혀줘. "
+                "필터를 사용하면 소량의 관련 데이터에서만 검색하므로 더 정확한 결과를 얻을 수 있어."
             )
         else:
             self.system_prompt = system_prompt

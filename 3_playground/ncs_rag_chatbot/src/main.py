@@ -13,17 +13,17 @@ async def main():
     
     # 설정 값
     DB_CONNECTION = "postgresql+asyncpg://postgres:1234@localhost:5432/pdf_db"
-    TABLE_NAME = 'test_table'
-    
+    TABLE_NAME = "test_table_filtered"
+
     print("Initializing Chatbot...")
 
-    # 1. 임베딩 모델 & 벡터 저장소 연결 (Async)
+    # 1. 임베딩 모델 & 벡터 저장소 연결 (Async, 메타데이터 컬럼 포함)
     embedding_model = EmbeddingModel().get_embeddings()
     vector_store_manager = await VectorStoreManager.create(
         connection_string=DB_CONNECTION,
         table_name=TABLE_NAME,
-        embedding_model=embedding_model
-
+        embedding_model=embedding_model,
+        metadata_columns=["main_category", "sub_category", "source", "page"],
     )
     vector_store = vector_store_manager.get_vector_store()
 
@@ -35,8 +35,8 @@ async def main():
     agent = ChatAgent()
     agent.create_agent(tools)
     
-    # 테스트 질의 (Async)
-    query = ""
+    # 테스트 질의 (Async) - 메타데이터 필터링 테스트
+    query = "IT테스트 분야에서 테스트 기획의 핵심 내용을 알려줘"
     await agent.run(query)
 
 if __name__ == "__main__":
