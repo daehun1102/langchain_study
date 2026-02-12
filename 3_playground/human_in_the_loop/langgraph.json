@@ -1,9 +1,0 @@
-{
-  "dependencies": [
-    "."
-  ],
-  "graphs": {
-    "agent": "./ai_server/semiconductor/semiconductor_agent.py:supervisor_agent"
-  },
-  "env": ".env"
-}
