@@ -29,10 +29,14 @@ public class PromptController {
     }
 
     @PutMapping("/{key}")
-    public ResponseEntity<Void> set(
+    public ResponseEntity<?> set(
             @PathVariable String key,
             @RequestBody Map<String, String> body) {
-        promptService.set(key, body.get("value"));
+        String value = body.get("value");
+        if (value == null || value.isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "'value' 필드가 필요합니다."));
+        }
+        promptService.set(key, value);
         return ResponseEntity.ok().build();
     }
 
