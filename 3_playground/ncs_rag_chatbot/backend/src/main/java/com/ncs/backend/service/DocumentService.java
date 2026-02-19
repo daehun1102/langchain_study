@@ -3,8 +3,10 @@ package com.ncs.backend.service;
 import com.ncs.backend.mapper.DocumentMapper;
 import com.ncs.backend.model.Document;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClient;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -12,13 +14,16 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class DocumentService {
 
     private final DocumentMapper documentMapper;
+    private final RestClient pythonRestClient;
 
     @Value("${app.upload-dir}")
     private String uploadDir;
@@ -51,6 +56,28 @@ public class DocumentService {
         doc.setSubCategory(subCategory);
         doc.setStatus("PENDING");
         documentMapper.insert(doc);
+
+        // Python AI 서버에 벡터 저장 요청
+        try {
+            Map<String, String> ingestReq = Map.of(
+                "doc_id", docId,
+                "file_path", filePath.toAbsolutePath().toString()
+            );
+            Map<?, ?> response = pythonRestClient.post()
+                    .uri("/internal/ingest")
+                    .body(ingestReq)
+                    .retrieve()
+                    .body(Map.class);
+
+            String status = response != null ? (String) response.get("status") : "FAILED";
+            documentMapper.updateStatus(docId, status);
+            doc.setStatus(status);
+            log.info("[DocumentService] ingest 완료: docId={}, status={}", docId, status);
+        } catch (Exception e) {
+            log.error("[DocumentService] Python ingest 호출 실패: docId={}, error={}", docId, e.getMessage());
+            documentMapper.updateStatus(docId, "FAILED");
+            doc.setStatus("FAILED");
+        }
 
         return doc;
     }
