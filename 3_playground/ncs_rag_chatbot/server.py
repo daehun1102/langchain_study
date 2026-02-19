@@ -130,21 +130,21 @@ async def chat(req: ChatRequest):
     last_message = await agent.run(req.query)
     answer = last_message.content if last_message else "응답을 생성할 수 없습니다."
 
-    sources = await _collect_sources(req.query, tools)
+    sources = await _collect_sources(req.query, doc_ids)
 
     return ChatResponse(answer=answer, sources=sources)
 
 
-async def _collect_sources(query: str, tools: list) -> List[SourceInfo]:
-    """retrieve_context 도구를 직접 호출하여 sources를 수집한다.
+async def _collect_sources(query: str, doc_ids: List[str]) -> List[SourceInfo]:
+    """벡터 스토어에서 직접 유사 문서를 검색하여 sources를 반환한다.
 
-    content_and_artifact 형식 도구는 ainvoke 결과가 ToolMessage이며,
-    ToolMessage.artifact 필드에 Document 목록이 담긴다.
+    content_and_artifact 도구를 ainvoke()로 직접 호출하면 content(str)만
+    반환되므로, vector_store_manager를 직접 호출한다.
     """
     try:
-        retrieve_tool = tools[0]  # retrieve_context
-        tool_message = await retrieve_tool.ainvoke({"query": query})
-        retrieved_docs = tool_message.artifact or []
+        retrieved_docs = await vector_store_manager.similarity_search_by_doc_ids(
+            query, doc_ids=doc_ids, k=4
+        )
         return [
             SourceInfo(
                 content=doc.page_content[:300],
