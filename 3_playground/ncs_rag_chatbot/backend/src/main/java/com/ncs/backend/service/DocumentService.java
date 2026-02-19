@@ -24,13 +24,23 @@ public class DocumentService {
     private String uploadDir;
 
     public Document upload(MultipartFile file, String mainCategory, String subCategory) throws IOException {
+        // 파일 유효성 검사
+        if (file.isEmpty()) {
+            throw new IllegalArgumentException("업로드된 파일이 비어있습니다.");
+        }
+        String originalFilename = file.getOriginalFilename();
+        if (originalFilename == null || originalFilename.isBlank()) {
+            throw new IllegalArgumentException("파일명이 없습니다.");
+        }
+        // Path Traversal 방지: 파일명 부분만 추출
+        String filename = Paths.get(originalFilename).getFileName().toString();
+
         String docId = UUID.randomUUID().toString();
 
         Path uploadPath = Paths.get(uploadDir).toAbsolutePath();
         if (!Files.exists(uploadPath)) {
             Files.createDirectories(uploadPath);
         }
-        String filename = file.getOriginalFilename();
         Path filePath = uploadPath.resolve(docId + "_" + filename);
         file.transferTo(filePath);
 
@@ -49,7 +59,15 @@ public class DocumentService {
         return documentMapper.findAll();
     }
 
-    public void delete(String docId) {
+    public void delete(String docId) throws IOException {
+        // DB에서 파일 정보 조회 후 파일시스템에서도 삭제
+        Document doc = documentMapper.findById(docId);
+        if (doc != null) {
+            Path uploadPath = Paths.get(uploadDir).toAbsolutePath();
+            // uploads/{docId}_{filename} 패턴으로 저장된 파일 삭제
+            Path filePath = uploadPath.resolve(docId + "_" + doc.getFilename());
+            Files.deleteIfExists(filePath);
+        }
         documentMapper.delete(docId);
     }
 
