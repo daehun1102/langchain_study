@@ -1,3 +1,11 @@
+"""
+ingest.py — PDF를 PGVector에 적재하는 모듈
+
+변경 사항 (Phase 2):
+- 메타데이터 컬럼을 doc_id + page로 단순화 (Oracle과 doc_id로 연결)
+- ingest_single_document(): Spring에서 단일 PDF 처리 요청 시 호출
+"""
+
 from loader import DocumentLoader
 from splitter import DocumentSplitter
 from embeddings import EmbeddingModel
@@ -6,125 +14,87 @@ from sqlalchemy.ext.asyncio import create_async_engine
 from dotenv import load_dotenv
 import asyncio
 import os
-import glob
 
-# 환경 변수 로드
 load_dotenv()
 
-# 메타데이터 컬럼 정의
+TABLE_NAME = "ncs_vectors"
+VECTOR_SIZE = 1536  # text-embedding-3-small
+
+# PGVector에는 doc_id(Oracle 참조)와 page만 저장
 METADATA_COLUMNS = [
-    Column("main_category", "VARCHAR", nullable=True),   # 대분류: 정보기술개발, 정보기술관리, 직업기초능력
-    Column("sub_category", "VARCHAR", nullable=True),     # 중분류: SW아키텍쳐, IT테스트 등
-    Column("source", "VARCHAR", nullable=True),           # 원본 파일명
-    Column("page", "INTEGER", nullable=True),             # 페이지 번호
+    Column("doc_id", "VARCHAR", nullable=True),
+    Column("page", "INTEGER", nullable=True),
 ]
 
-# PDF 루트 디렉토리
-ASSETS_ROOT = "../assets/실습 NCS파일"
+
+async def _get_pg_engine(db_connection: str):
+    engine = create_async_engine(db_connection)
+    return PGEngine.from_engine(engine)
 
 
-def collect_pdf_files(root_dir: str):
-    """폴더 구조에서 PDF 파일을 탐색하고 메타데이터를 추출합니다.
-
-    폴더 구조: root/대분류/중분류/파일.pdf
-    """
-    pdf_entries = []
-
-    for main_cat in os.listdir(root_dir):
-        main_cat_path = os.path.join(root_dir, main_cat)
-        if not os.path.isdir(main_cat_path):
-            continue
-
-        for sub_cat in os.listdir(main_cat_path):
-            sub_cat_path = os.path.join(main_cat_path, sub_cat)
-            if not os.path.isdir(sub_cat_path):
-                continue
-
-            for filename in os.listdir(sub_cat_path):
-                if filename.lower().endswith(".pdf"):
-                    pdf_entries.append({
-                        "file_path": os.path.join(sub_cat_path, filename),
-                        "main_category": main_cat,
-                        "sub_category": sub_cat,
-                        "source": filename,
-                    })
-
-    return pdf_entries
+async def _get_vector_store(pg_engine, embedding_model):
+    return await PGVectorStore.create(
+        engine=pg_engine,
+        table_name=TABLE_NAME,
+        embedding_service=embedding_model,
+        metadata_columns=["doc_id", "page"],
+    )
 
 
-async def ingest_data():
-    """PDF 데이터를 로드하고 벡터 저장소에 적재하는 함수 (Async)"""
-
-    # 설정 값
-    DB_CONNECTION = "postgresql+asyncpg://postgres:1234@localhost:5432/pdf_db"
-    TABLE_NAME = "test_table_filtered"
-    VECTOR_SIZE = 1536  # text-embedding-3-small 차원
-
-    # 임베딩 모델 준비
-    embedding_model = EmbeddingModel().get_embeddings()
-
-    # 1. PGEngine 생성
-    print("Initializing PGEngine...")
-    engine = create_async_engine(DB_CONNECTION)
-    pg_engine = PGEngine.from_engine(engine)
-
-    # 2. 테이블 생성 (메타데이터 컬럼 포함)
-    print(f"Creating table '{TABLE_NAME}' with metadata columns...")
+async def init_table(db_connection: str):
+    """테이블을 초기화한다. 최초 1회 또는 스키마 변경 시 실행."""
+    pg_engine = await _get_pg_engine(db_connection)
     await pg_engine.ainit_vectorstore_table(
         table_name=TABLE_NAME,
         vector_size=VECTOR_SIZE,
         metadata_columns=METADATA_COLUMNS,
         overwrite_existing=True,
     )
+    print(f"[ingest] 테이블 '{TABLE_NAME}' 초기화 완료")
 
-    # 3. 벡터 저장소 연결
-    print("Connecting to Vector Store...")
-    vector_store = await PGVectorStore.create(
-        engine=pg_engine,
-        table_name=TABLE_NAME,
-        embedding_service=embedding_model,
-        metadata_columns=["main_category", "sub_category", "source", "page"],
-    )
 
-    # 4. PDF 파일 탐색
-    pdf_entries = collect_pdf_files(ASSETS_ROOT)
-    print(f"\nFound {len(pdf_entries)} PDF files:\n")
-    for entry in pdf_entries:
-        print(f"  [{entry['main_category']}] [{entry['sub_category']}] {entry['source']}")
+async def ingest_single_document(doc_id: str, file_path: str, db_connection: str) -> int:
+    """단일 PDF를 PGVector에 적재한다.
 
-    # 5. 문서 로드 및 적재
+    Args:
+        doc_id: Oracle documents 테이블의 PK (UUID)
+        file_path: PDF 파일 절대 경로
+        db_connection: PGVector 연결 문자열
+
+    Returns:
+        저장된 청크 수
+    """
+    embedding_model = EmbeddingModel().get_embeddings()
+    pg_engine = await _get_pg_engine(db_connection)
+    vector_store = await _get_vector_store(pg_engine, embedding_model)
+
+    loader = DocumentLoader(file_path=file_path)
+    docs = loader.load()
+
     splitter = DocumentSplitter()
-    total_chunks = 0
+    splits = splitter.split_documents(docs)
 
-    for entry in pdf_entries:
-        print(f"\n--- Processing: {entry['source']} ---")
-        print(f"  main_category: {entry['main_category']}")
-        print(f"  sub_category:  {entry['sub_category']}")
+    for doc in splits:
+        doc.page_content = doc.page_content.replace("\x00", "")
+        doc.metadata["doc_id"] = doc_id
+        doc.metadata["page"] = doc.metadata.get("page", 0)
 
-        # 문서 로드
-        loader = DocumentLoader(file_path=entry["file_path"])
-        docs = loader.load()
-        print(f"  Loaded {len(docs)} pages.")
-
-        # 문서 분할
-        splits = splitter.split_documents(docs)
-        print(f"  Split into {len(splits)} chunks.")
-
-        # 메타데이터 추가 + null byte 제거
-        for doc in splits:
-            doc.page_content = doc.page_content.replace("\x00", "")
-            doc.metadata["main_category"] = entry["main_category"]
-            doc.metadata["sub_category"] = entry["sub_category"]
-            doc.metadata["source"] = entry["source"]
-            doc.metadata["page"] = doc.metadata.get("page", 0)
-
-        # 벡터 저장소에 추가
-        await vector_store.aadd_documents(splits)
-        total_chunks += len(splits)
-        print(f"  Added {len(splits)} chunks.")
-
-    print(f"\nIngestion complete! Total: {total_chunks} chunks from {len(pdf_entries)} files.")
+    await vector_store.aadd_documents(splits)
+    print(f"[ingest] doc_id={doc_id}, 청크={len(splits)}개 저장 완료")
+    return len(splits)
 
 
 if __name__ == "__main__":
-    asyncio.run(ingest_data())
+    import sys
+    db = os.getenv("DB_CONNECTION", "postgresql+asyncpg://postgres:1234@localhost:5432/pdf_db")
+
+    if len(sys.argv) == 2 and sys.argv[1] == "init":
+        # 테이블 초기화: python ingest.py init
+        asyncio.run(init_table(db))
+    elif len(sys.argv) == 3:
+        # 단일 파일 ingest: python ingest.py <doc_id> <file_path>
+        asyncio.run(ingest_single_document(sys.argv[1], sys.argv[2], db))
+    else:
+        print("Usage:")
+        print("  python ingest.py init               # 테이블 초기화")
+        print("  python ingest.py <doc_id> <path>    # 단일 파일 적재")
