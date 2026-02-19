@@ -16,8 +16,8 @@ export async function fetchCategories() {
 
 export async function sendChat(query, mainCategory = null, subCategory = null) {
   const body = { query }
-  if (mainCategory) body.main_category = mainCategory
-  if (subCategory) body.sub_category = subCategory
+  if (mainCategory) body.mainCategory = mainCategory
+  if (subCategory) body.subCategory = subCategory
 
   const res = await fetch(`${BASE_URL}/api/chat`, {
     method: 'POST',

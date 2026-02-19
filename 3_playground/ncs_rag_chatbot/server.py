@@ -1,6 +1,9 @@
 """
 server.py — Python FastAPI AI 서버 (내부 전용)
 
+외부 공개 API(/api/*)는 Spring Boot(8080)가 담당한다.
+이 서버는 Spring에서만 호출하는 내부 엔드포인트만 제공한다.
+
 엔드포인트:
   GET  /internal/health  — 헬스 체크
   POST /internal/ingest  — PDF 벡터 저장 (Spring 호출)
