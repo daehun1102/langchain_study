@@ -1,62 +1,52 @@
-from langchain_postgres import PGEngine, PGVectorStore, PGVector, Column
+"""
+vector_store.py — PGVectorStore 관리 모듈
+
+변경 사항 (Phase 2):
+- metadata_columns: doc_id + page만 사용
+- similarity_search_by_doc_ids(): doc_id 목록으로 필터링 검색
+"""
+
+from langchain_postgres import PGEngine, PGVectorStore
 from typing import List, Optional
 from langchain_core.documents import Document
 from sqlalchemy.ext.asyncio import create_async_engine
-from sqlalchemy.exc import ProgrammingError
+
+TABLE_NAME = "ncs_vectors"
+
 
 class VectorStoreManager:
-    """벡터 저장소(PostgreSQL)를 관리하는 클래스 (Async)"""
 
-    def __init__(self, engine, vector_store):
-        self.pg_engine = engine
+    def __init__(self, pg_engine, vector_store):
+        self.pg_engine = pg_engine
         self.vector_store = vector_store
 
     @classmethod
-    async def create(
-        cls,
-        connection_string: str,
-        table_name: str,
-        embedding_model,
-        metadata_columns: Optional[List[str]] = None,
-    ):
-        """비동기적으로 VectorStoreManager 인스턴스를 생성합니다."""
+    async def create(cls, connection_string: str, embedding_model):
+        """VectorStoreManager 인스턴스를 비동기로 생성한다."""
         engine = create_async_engine(connection_string)
         pg_engine = PGEngine.from_engine(engine)
-
-        if metadata_columns:
-            vector_store = await PGVectorStore.create(
-                engine=pg_engine,
-                table_name=table_name,
-                embedding_service=embedding_model,
-                metadata_columns=metadata_columns,
-            )
-        else:
-            vector_store = await PGVectorStore.create(
-                engine=pg_engine,
-                table_name=table_name,
-                embedding_service=embedding_model,
-            )
-
+        vector_store = await PGVectorStore.create(
+            engine=pg_engine,
+            table_name=TABLE_NAME,
+            embedding_service=embedding_model,
+            metadata_columns=["doc_id", "page"],
+        )
         return cls(pg_engine, vector_store)
 
-    async def init_table(self, table_name: str, vector_size: int, metadata_columns: List[Column]):
-        """메타데이터 컬럼이 포함된 벡터 저장소 테이블을 초기화합니다."""
-        await self.pg_engine.ainit_vectorstore_table(
-            table_name=table_name,
-            vector_size=vector_size,
-            metadata_columns=metadata_columns,
-        )
+    async def similarity_search_by_doc_ids(
+        self,
+        query: str,
+        doc_ids: List[str],
+        k: int = 4,
+    ) -> List[Document]:
+        """doc_id 목록 범위 내에서 유사도 검색을 수행한다.
 
-    async def add_documents(self, documents: List[Document]):
-        """문서를 벡터 저장소에 추가합니다. (비동기)"""
-        return await self.vector_store.aadd_documents(documents=documents)
+        doc_ids가 비어있으면 전체 벡터에서 검색한다.
+        """
+        if doc_ids:
+            filter_dict = {"doc_id": {"$in": doc_ids}}
+            return await self.vector_store.asimilarity_search(query, k=k, filter=filter_dict)
+        return await self.vector_store.asimilarity_search(query, k=k)
 
     def get_vector_store(self):
-        """벡터 저장소 객체를 반환합니다."""
         return self.vector_store
-    
-    def as_retriever(self, search_kwargs: dict = None):
-        """Retriever 인터페이스로 변환합니다."""
-        if search_kwargs is None:
-            search_kwargs = {"k": 2}
-        return self.vector_store.as_retriever(search_kwargs=search_kwargs)
