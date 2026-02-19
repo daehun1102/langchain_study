@@ -1,120 +1,121 @@
+"""
+server.py — Python FastAPI AI 서버 (내부 전용)
+
+엔드포인트:
+  POST /internal/ingest  — Spring에서 PDF 업로드 후 벡터 저장 요청
+  POST /internal/chat    — Spring에서 채팅 요청 (doc_ids 포함)
+  GET  /internal/health  — 헬스 체크
+
+외부(프론트엔드)에서 직접 호출하지 않는다. Spring Boot(8080)만 이 서버를 호출한다.
+실행: uvicorn server:app --reload --port 8000
+"""
+
 import sys
 import os
-
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "src"))
 
 from fastapi import FastAPI
-from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import Optional
+from typing import List, Optional
 from dotenv import load_dotenv
 
 load_dotenv()
 
 from embeddings import EmbeddingModel
 from vector_store import VectorStoreManager
-from langchain.chat_models import init_chat_model
+from agent import ChatAgent
+from tool import ToolBuilder
+from ingest import ingest_single_document
 
-app = FastAPI()
+app = FastAPI(title="NCS RAG AI Server (Internal)")
+
+# Spring Boot에서만 호출 — CORS를 Spring 서버로 제한
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
+    allow_origins=["http://localhost:8080"],
+    allow_methods=["GET", "POST"],
     allow_headers=["*"],
 )
 
-store = None
-llm = None
+DB_CONNECTION = os.getenv(
+    "DB_CONNECTION",
+    "postgresql+asyncpg://postgres:1234@localhost:5432/pdf_db"
+)
 
-DB_CONNECTION = "postgresql+asyncpg://postgres:1234@localhost:5432/pdf_db"
-TABLE_NAME = "test_table_filtered"
-
-CATEGORIES = {
-    "정보기술개발": ["SW아키텍쳐", "응용SW엔지니어링", "임베디드SW엔지니어링"],
-    "정보기술관리": ["IT테스트", "IT품질보증", "IT프로젝트관리"],
-    "직업기초능력": ["문제해결능력", "수리능력", "의사소통능력"],
-}
-
-
-class ChatRequest(BaseModel):
-    query: str
-    main_category: Optional[str] = None
-    sub_category: Optional[str] = None
+vector_store_manager: Optional[VectorStoreManager] = None
 
 
 @app.on_event("startup")
 async def startup():
-    global store, llm
+    global vector_store_manager
     emb = EmbeddingModel().get_embeddings()
-    mgr = await VectorStoreManager.create(
-        connection_string=DB_CONNECTION,
-        table_name=TABLE_NAME,
-        embedding_model=emb,
-        metadata_columns=["main_category", "sub_category", "source", "page"],
-    )
-    store = mgr.get_vector_store()
-    llm = init_chat_model("gpt-4o-mini")
+    vector_store_manager = await VectorStoreManager.create(DB_CONNECTION, emb)
+    print("[server] VectorStoreManager 초기화 완료")
 
 
-@app.get("/api/categories")
-async def categories():
-    return CATEGORIES
+# ── Request / Response 모델 ──────────────────────────────────
+
+class IngestRequest(BaseModel):
+    doc_id: str     # Oracle에서 발급한 UUID
+    file_path: str  # PDF 파일 절대 경로 (Spring과 공유된 로컬 경로)
 
 
-@app.get("/api/health")
+class IngestResponse(BaseModel):
+    doc_id: str
+    chunks: int
+    status: str     # INDEXED | FAILED
+
+
+class ChatRequest(BaseModel):
+    query: str
+    doc_ids: Optional[List[str]] = None  # Oracle에서 조회한 doc_id 목록
+
+
+class SourceInfo(BaseModel):
+    content: str
+    doc_id: str
+    page: int
+
+
+class ChatResponse(BaseModel):
+    answer: str
+    sources: List[SourceInfo]
+
+
+# ── Endpoints ────────────────────────────────────────────────
+
+@app.get("/internal/health")
 async def health():
     return {"status": "ok"}
 
 
-@app.post("/api/chat")
+@app.post("/internal/ingest", response_model=IngestResponse)
+async def ingest(req: IngestRequest):
+    """Spring에서 PDF 업로드 후 호출. doc_id와 파일 경로를 받아 PGVector에 벡터 저장."""
+    try:
+        chunks = await ingest_single_document(req.doc_id, req.file_path, DB_CONNECTION)
+        return IngestResponse(doc_id=req.doc_id, chunks=chunks, status="INDEXED")
+    except Exception as e:
+        print(f"[ingest] 오류: {e}")
+        return IngestResponse(doc_id=req.doc_id, chunks=0, status="FAILED")
+
+
+@app.post("/internal/chat", response_model=ChatResponse)
 async def chat(req: ChatRequest):
-    filt = {}
-    if req.main_category:
-        filt["main_category"] = {"$eq": req.main_category}
-    if req.sub_category:
-        filt["sub_category"] = {"$eq": req.sub_category}
+    """Spring에서 호출. doc_ids 범위 내에서 RAG 검색 후 AI 응답 생성."""
+    doc_ids = req.doc_ids or []
 
-    if filt:
-        docs = await store.asimilarity_search(req.query, k=4, filter=filt)
-    else:
-        docs = await store.asimilarity_search(req.query, k=4)
+    tool_builder = ToolBuilder(vector_store_manager)
+    tools = tool_builder.build_tools(doc_ids=doc_ids)
 
-    ctx = "\n\n---\n\n".join(d.page_content for d in docs)
+    agent = ChatAgent()
+    agent.create_agent(tools)
 
+    last_message = await agent.run(req.query)
+    answer = last_message.content if last_message else "응답을 생성할 수 없습니다."
+
+    # sources 추출 (tool 호출 결과에서)
     sources = []
-    for d in docs:
-        m = d.metadata
-        sources.append({
-            "content": d.page_content[:300],
-            "main_category": m.get("main_category", ""),
-            "sub_category": m.get("sub_category", ""),
-            "source": m.get("source", ""),
-            "page": m.get("page", 0),
-        })
 
-    msgs = [
-        {
-            "role": "system",
-            "content": (
-                "너는 NCS(국가직무능력표준) 문서 전문가야. "
-                "다음 참고 문서를 바탕으로 정확하고 친절하게 답변해줘. "
-                "답변에 관련 내용의 출처(파일명, 페이지)를 언급해줘.\n\n"
-                f"{ctx}"
-            ),
-        },
-        {"role": "user", "content": req.query},
-    ]
-    resp = await llm.ainvoke(msgs)
-
-    return {
-        "answer": resp.content,
-        "sources": sources,
-        "filter": filt if filt else None,
-    }
-
-
-# Serve frontend static files
-frontend_dir = os.path.join(os.path.dirname(__file__), "frontend", "dist")
-if os.path.exists(frontend_dir):
-    app.mount("/", StaticFiles(directory=frontend_dir, html=True), name="static")
+    return ChatResponse(answer=answer, sources=sources)
