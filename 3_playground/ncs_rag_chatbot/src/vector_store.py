@@ -4,6 +4,9 @@ vector_store.py — PGVectorStore 관리 모듈
 변경 사항 (Phase 2):
 - metadata_columns: doc_id + page만 사용
 - similarity_search_by_doc_ids(): doc_id 목록으로 필터링 검색
+
+변경 사항 (Phase 2.1):
+- delete_by_doc_id(): doc_id 청크 일괄 삭제 (삭제 일관성)
 """
 
 from langchain_postgres import PGEngine, PGVectorStore
@@ -47,6 +50,27 @@ class VectorStoreManager:
             filter_dict = {"doc_id": {"$in": doc_ids}}
             return await self.vector_store.asimilarity_search(query, k=k, filter=filter_dict)
         return await self.vector_store.asimilarity_search(query, k=k)
+
+    async def delete_by_doc_id(self, doc_id: str) -> int:
+        """doc_id에 해당하는 모든 벡터 청크를 삭제한다.
+
+        langchain-postgres는 메타데이터 필터로 벡터 삭제 API를 제공하지 않으므로
+        SQLAlchemy를 통해 직접 SQL DELETE를 실행한다.
+
+        Args:
+            doc_id: Oracle documents 테이블의 doc_id (UUID)
+
+        Returns:
+            삭제된 청크(행) 수
+        """
+        from sqlalchemy import text
+        engine = self.pg_engine._engine
+        async with engine.begin() as conn:
+            result = await conn.execute(
+                text(f"DELETE FROM {TABLE_NAME} WHERE doc_id = :doc_id"),
+                {"doc_id": doc_id},
+            )
+            return result.rowcount
 
     def get_vector_store(self):
         return self.vector_store

@@ -64,7 +64,7 @@ app = FastAPI(title="NCS RAG AI Server (Internal)", lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:8080"],
-    allow_methods=["GET", "POST"],
+    allow_methods=["GET", "POST", "DELETE"],
     allow_headers=["*"],
 )
 
@@ -98,11 +98,28 @@ class ChatResponse(BaseModel):
     sources: List[SourceInfo]
 
 
+class DeleteResponse(BaseModel):
+    doc_id: str
+    deleted_chunks: int
+
+
 # ── Endpoints ─────────────────────────────────────────────────
 
 @app.get("/internal/health")
 async def health():
     return {"status": "ok"}
+
+
+@app.delete("/internal/delete/{doc_id}", response_model=DeleteResponse)
+async def delete_vectors(doc_id: str):
+    """Spring에서 문서 삭제 시 호출. PGVector에서 해당 doc_id의 모든 청크를 삭제한다."""
+    try:
+        deleted_count = await vector_store_manager.delete_by_doc_id(doc_id)
+        logger.info("[delete] 벡터 삭제 완료: doc_id=%s, chunks=%d", doc_id, deleted_count)
+        return DeleteResponse(doc_id=doc_id, deleted_chunks=deleted_count)
+    except Exception:
+        logger.error("[delete] 오류:\n%s", traceback.format_exc())
+        raise HTTPException(status_code=500, detail=f"벡터 삭제 실패: doc_id={doc_id}")
 
 
 @app.post("/internal/ingest", response_model=IngestResponse)

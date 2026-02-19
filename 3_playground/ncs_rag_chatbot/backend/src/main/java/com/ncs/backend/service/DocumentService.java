@@ -86,16 +86,35 @@ public class DocumentService {
         return documentMapper.findAll();
     }
 
-    public void delete(String docId) throws IOException {
-        // DB에서 파일 정보 조회 후 파일시스템에서도 삭제
+    public void delete(String docId) {
+        // 1. Python PGVector 벡터 삭제 (best-effort — 실패해도 Oracle 삭제 진행)
+        try {
+            pythonRestClient.delete()
+                    .uri("/internal/delete/{docId}", docId)
+                    .retrieve()
+                    .toBodilessEntity();
+            log.info("[DocumentService] PGVector 벡터 삭제 완료: docId={}", docId);
+        } catch (Exception e) {
+            log.warn("[DocumentService] Python 벡터 삭제 실패 (Oracle 삭제 계속 진행): docId={}, error={}",
+                    docId, e.getMessage());
+        }
+
+        // 2. 파일 시스템에서 삭제
         Document doc = documentMapper.findById(docId);
         if (doc != null) {
-            Path uploadPath = Paths.get(uploadDir).toAbsolutePath();
-            // uploads/{docId}_{filename} 패턴으로 저장된 파일 삭제
-            Path filePath = uploadPath.resolve(docId + "_" + doc.getFilename());
-            Files.deleteIfExists(filePath);
+            try {
+                Path uploadPath = Paths.get(uploadDir).toAbsolutePath();
+                Path filePath = uploadPath.resolve(docId + "_" + doc.getFilename());
+                Files.deleteIfExists(filePath);
+                log.info("[DocumentService] 파일 삭제 완료: {}", filePath);
+            } catch (IOException e) {
+                log.warn("[DocumentService] 파일 삭제 실패 (Oracle 삭제 계속 진행): {}", e.getMessage());
+            }
         }
+
+        // 3. Oracle에서 삭제
         documentMapper.delete(docId);
+        log.info("[DocumentService] Oracle 삭제 완료: docId={}", docId);
     }
 
     public void updateStatus(String docId, String status) {
