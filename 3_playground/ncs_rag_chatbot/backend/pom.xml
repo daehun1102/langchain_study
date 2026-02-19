@@ -45,16 +45,11 @@
 			<artifactId>ojdbc11</artifactId>
 			<scope>runtime</scope>
 		</dependency>
+		<!-- PostgreSQL: Phase 2에서 PGVector(벡터 임베딩 DB) 연결에 사용 -->
 		<dependency>
 			<groupId>org.postgresql</groupId>
 			<artifactId>postgresql</artifactId>
 			<scope>runtime</scope>
-		</dependency>
-		<!-- 파일 업로드 지원 -->
-		<dependency>
-			<groupId>commons-fileupload</groupId>
-			<artifactId>commons-fileupload</artifactId>
-			<version>1.5</version>
 		</dependency>
 		<dependency>
 			<groupId>org.projectlombok</groupId>
