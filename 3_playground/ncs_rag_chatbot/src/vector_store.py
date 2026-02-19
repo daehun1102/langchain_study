@@ -36,7 +36,7 @@ class VectorStoreManager:
     async def similarity_search_by_doc_ids(
         self,
         query: str,
-        doc_ids: List[str],
+        doc_ids: Optional[List[str]] = None,
         k: int = 4,
     ) -> List[Document]:
         """doc_id 목록 범위 내에서 유사도 검색을 수행한다.
