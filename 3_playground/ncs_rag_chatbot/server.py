@@ -21,6 +21,10 @@ from typing import List, Optional
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "src"))
 
+# 트레이싱은 LangChain import보다 먼저 초기화해야 모든 호출을 계측한다
+from tracing import setup_tracing
+setup_tracing()
+
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
