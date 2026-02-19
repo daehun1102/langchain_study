@@ -31,3 +31,31 @@ export async function sendChat(query, mainCategory = null, subCategory = null) {
 
   return res.json()
 }
+
+export async function fetchDocuments() {
+  const res = await fetch(`${BASE_URL}/api/documents`)
+  if (!res.ok) throw new Error(`Server error: ${res.status}`)
+  return res.json()
+}
+
+export async function uploadDocument(file, mainCategory, subCategory) {
+  const formData = new FormData()
+  formData.append('file', file)
+  if (mainCategory) formData.append('mainCategory', mainCategory)
+  if (subCategory) formData.append('subCategory', subCategory)
+
+  const res = await fetch(`${BASE_URL}/api/documents`, {
+    method: 'POST',
+    body: formData,
+  })
+  if (!res.ok) throw new Error(`Upload failed: ${res.status}`)
+  return res.json()
+}
+
+export async function deleteDocument(docId) {
+  const res = await fetch(`${BASE_URL}/api/documents/${docId}`, {
+    method: 'DELETE',
+  })
+  if (!res.ok) throw new Error(`Delete failed: ${res.status}`)
+  return true
+}
