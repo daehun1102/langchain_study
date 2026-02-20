@@ -112,7 +112,7 @@ spring.datasource.password=rag1234
 ### 5. PGVector 테이블 초기화 (최초 1회)
 
 ```bash
-python src/ingest.py init
+python ai_server/ingest.py init
 ```
 
 ---
@@ -238,7 +238,7 @@ ncs_rag_chatbot/
 │           ├── mapper/             # MyBatis XML
 │           └── sql/schema.sql      # Oracle DDL
 │
-├── src/                            # Python AI 서버
+├── ai_server/                      # Python AI 서버
 │   ├── agent.py                    # LangGraph ReAct Agent
 │   ├── tool.py                     # retrieve_context 도구
 │   ├── vector_store.py             # PGVectorStore (doc_id 필터)

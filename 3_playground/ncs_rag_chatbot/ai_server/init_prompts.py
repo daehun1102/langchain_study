@@ -1,7 +1,7 @@
 """
 init_prompts.py — Redis에 초기 프롬프트 데이터를 등록하는 스크립트
 
-실행: python src/init_prompts.py
+실행: python ai_server/init_prompts.py
 Redis가 실행 중이어야 합니다.
 """
 
