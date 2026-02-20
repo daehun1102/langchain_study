@@ -16,7 +16,7 @@ from prompt_loader import get_prompt
 from typing import List
 
 
-_PROMPT_KEYS = [
+PROMPT_KEYS = [
     "agent_system_prompt",
     "answer_format_prompt",
     "no_document_prompt",
@@ -31,7 +31,7 @@ def _build_system_prompt() -> str:
     Redis에서 키를 찾지 못하면 fallback 값을 사용한다.
     빈 문자열인 프롬프트는 결합에서 제외한다.
     """
-    parts = [p for k in _PROMPT_KEYS if (p := get_prompt(k))]
+    parts = [p for k in PROMPT_KEYS if (p := get_prompt(k))]
     return "\n\n".join(parts)
 
 

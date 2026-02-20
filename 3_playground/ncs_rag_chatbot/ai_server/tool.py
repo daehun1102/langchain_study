@@ -28,7 +28,7 @@ class ToolBuilder:
         """
         vsm = self.vsm
         _doc_ids = doc_ids or []
-        _k = k
+        _k = k  # 클로저 캡처용 — 내부 함수가 파라미터 k를 직접 참조하도록 명시
 
         @tool(response_format="content_and_artifact")
         async def retrieve_context(query: str):

@@ -2,7 +2,7 @@ import sys
 import os
 from unittest.mock import MagicMock
 
-# ai_server/ をPythonパスに追加
+# ai_server/ 를 Python 경로에 추가
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
 # Mock external packages that are not installed in the test environment.

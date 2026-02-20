@@ -10,24 +10,17 @@ example 구조:
 """
 
 import asyncio
+import concurrent.futures
 from typing import Any, Optional
 
 from langchain_core.messages import ToolMessage
 
-from agent import ChatAgent
+from agent import ChatAgent, PROMPT_KEYS
 from embeddings import EmbeddingModel
 from tool import ToolBuilder
 from vector_store import VectorStoreManager
 from prompt_loader import get_prompt
 from eval.configs import RAGConfig
-
-_PROMPT_KEYS = [
-    "agent_system_prompt",
-    "answer_format_prompt",
-    "no_document_prompt",
-    "query_enhance_prompt",
-    "category_hint_prompt",
-]
 
 
 def extract_context_from_messages(messages: list) -> str:
@@ -41,7 +34,7 @@ def extract_context_from_messages(messages: list) -> str:
 def build_system_prompt_with_override(prompt_override: dict[str, str]) -> str:
     """Redis에서 프롬프트를 로드하되 override 딕셔너리의 키로 교체한다."""
     parts = []
-    for key in _PROMPT_KEYS:
+    for key in PROMPT_KEYS:
         if key in prompt_override:
             p = prompt_override[key]
         else:
@@ -100,6 +93,14 @@ def make_task(rag_config: RAGConfig, db_connection: str):
 
             return {"answer": answer, "retrieved_context": retrieved_context}
 
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+
+        if loop is not None and loop.is_running():
+            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+                return executor.submit(asyncio.run, _run()).result()
         return asyncio.run(_run())
 
     return task
