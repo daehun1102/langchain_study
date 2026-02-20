@@ -12,7 +12,7 @@ import random
 import os
 import asyncio
 import logging
-from typing import Optional
+from typing import Any, Literal, Optional
 
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import create_async_engine
@@ -65,7 +65,7 @@ _REASONING_INSTRUCTION = (
 )
 
 
-def build_qa_prompt(chunk: str, strategy: str) -> str:
+def build_qa_prompt(chunk: str, strategy: Literal["factual", "reasoning", "mixed"]) -> str:
     """strategy에 맞는 Q&A 생성 프롬프트를 반환한다."""
     if strategy == "mixed":
         instruction = random.choice([_FACTUAL_INSTRUCTION, _REASONING_INSTRUCTION])
@@ -89,7 +89,7 @@ def build_qa_prompt(chunk: str, strategy: str) -> str:
 def generate_qa_pair(
     chunk: str,
     strategy: str,
-    client,
+    client: Any,
     model: str = "gpt-4o",
 ) -> Optional[dict]:
     """단일 청크에서 Q&A 쌍을 생성한다.
@@ -110,7 +110,7 @@ def generate_qa_pair(
         if "question" not in data or "reference_answer" not in data:
             return None
         return data
-    except (json.JSONDecodeError, KeyError):
+    except json.JSONDecodeError:
         logger.warning("[create_dataset] Q&A 파싱 실패: %s", raw[:100])
         return None
 
