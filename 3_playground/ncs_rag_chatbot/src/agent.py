@@ -32,9 +32,7 @@ def _build_system_prompt() -> str:
     빈 문자열인 프롬프트는 결합에서 제외한다.
     """
     parts = [p for k in _PROMPT_KEYS if (p := get_prompt(k))]
-    return "
-
-".join(parts)
+    return "\n\n".join(parts)
 
 
 class ChatAgent:

@@ -40,12 +40,8 @@ public class DocumentController {
     }
 
     @DeleteMapping("/{docId}")
-    public ResponseEntity<?> delete(@PathVariable String docId) {
-        try {
-            documentService.delete(docId);
-            return ResponseEntity.noContent().build();
-        } catch (IOException e) {
-            return ResponseEntity.internalServerError().body(Map.of("error", "파일 삭제 중 오류가 발생했습니다."));
-        }
+    public ResponseEntity<Void> delete(@PathVariable String docId) {
+        documentService.delete(docId);
+        return ResponseEntity.noContent().build();
     }
 }
