@@ -1,6 +1,3 @@
-import sys, os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
-
 from eval.configs import DatasetConfig, RAGConfig, DATASET_V1, DATASET_V2, V1_BASELINE, V2_GPT4O, V3_K8
 
 
@@ -16,6 +13,7 @@ def test_dataset_config_fields():
     assert cfg.num_samples == 10
     assert cfg.generation_strategy == "factual"
     assert cfg.categories is None
+    assert cfg.version == "v1"
 
 
 def test_rag_config_fields():
@@ -28,6 +26,7 @@ def test_rag_config_fields():
     assert cfg.version == "v1_baseline"
     assert cfg.retrieval_k == 4
     assert cfg.prompt_override is None
+    assert cfg.model_name == "gpt-4o-mini"
 
 
 def test_default_instances_exist():

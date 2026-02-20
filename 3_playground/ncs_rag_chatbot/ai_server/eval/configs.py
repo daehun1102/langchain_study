@@ -6,7 +6,7 @@ RAGConfig: RAG 에이전트 버전 설정 (모델, 검색 k, 프롬프트 오버
 """
 
 from dataclasses import dataclass
-from typing import Optional
+from typing import Literal, Optional
 
 
 @dataclass
@@ -14,8 +14,8 @@ class DatasetConfig:
     name: str                          # Phoenix dataset 이름 (예: "ncs-rag-eval-v1")
     version: str                       # 버전 레이블 (예: "v1")
     num_samples: int                   # 생성할 Q&A 쌍 총 개수
-    generation_strategy: str           # "factual" | "reasoning" | "mixed"
-    categories: Optional[list] = None  # None = 전체, 특정 값 = 필터링 (미구현, None만 사용)
+    generation_strategy: Literal["factual", "reasoning", "mixed"]
+    categories: Optional[list[str]] = None  # None = 전체, 특정 값 = 필터링 (미구현, None만 사용)
 
 
 @dataclass
@@ -23,7 +23,7 @@ class RAGConfig:
     version: str                              # 버전 레이블 (예: "v1_baseline")
     model_name: str                           # LLM 모델명 (예: "gpt-4o-mini")
     retrieval_k: int                          # similarity search top-k
-    prompt_override: Optional[dict] = None    # None = Redis 로드, dict = 키별 오버라이드
+    prompt_override: Optional[dict[str, str]] = None    # None = Redis 로드, dict = 키별 오버라이드
 
 
 # ── 기본 Dataset 버전 ───────────────────────────────────────────
