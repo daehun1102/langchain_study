@@ -64,7 +64,7 @@ class VectorStoreManager:
             삭제된 청크(행) 수
         """
         from sqlalchemy import text
-        engine = self.pg_engine._engine
+        engine = self.pg_engine._pool
         async with engine.begin() as conn:
             result = await conn.execute(
                 text(f"DELETE FROM {TABLE_NAME} WHERE doc_id = :doc_id"),
