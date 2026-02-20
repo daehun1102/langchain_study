@@ -19,7 +19,7 @@ import traceback
 from contextlib import asynccontextmanager
 from typing import List, Optional
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "src"))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "ai_server"))
 
 # 트레이싱은 LangChain import보다 먼저 초기화해야 모든 호출을 계측한다
 from tracing import setup_tracing
