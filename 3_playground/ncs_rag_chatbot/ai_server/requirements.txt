@@ -1,0 +1,8 @@
+# RAG 평가 시스템 의존성
+# 설치: pip install -r requirements.txt
+
+# Phoenix 평가 프레임워크
+arize-phoenix-evals
+
+# 테스트
+pytest-asyncio
