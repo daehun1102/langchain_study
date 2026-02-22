@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(/c/study/langchain_study/3_playground/ncs_rag_chatbot/backend/src/main/java/com/ncs/backend/service/DocumentService.java:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(python3.exe:*)",
+      "Bash(py:*)",
+      "Bash(python3:*)",
+      "Bash(python:*)",
+      "Bash(node --version:*)",
+      "Bash(node -e \"require\\(''fs''\\).writeFileSync\\(''/c/study/langchain_study/3_playground/ncs_rag_chatbot/frontend/src/components/DocumentView.vue'', ''test'', ''utf8''\\); console.log\\(''node write ok''\\)\")",
+      "Bash(printf '%s':*)",
+      "Bash(printf:*)",
+      "Bash(powershell -NoProfile -NonInteractive -Command \"Write-Host ''PS OK''\")",
+      "Bash(powershell -NoProfile -NonInteractive -File \"C:/study/langchain_study/3_playground/ncs_rag_chatbot/frontend/write_files_ps.ps1\")"
+    ]
+  }
+}
