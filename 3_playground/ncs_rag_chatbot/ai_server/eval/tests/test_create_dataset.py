@@ -14,8 +14,8 @@ from eval.create_dataset import (
 async def test_fetch_chunks_returns_list_of_dicts():
     """fetch_chunks가 {document, doc_id} 딕셔너리 목록을 반환한다."""
     mock_rows = [
-        MagicMock(document="청크1 내용", doc_id="uuid-001"),
-        MagicMock(document="청크2 내용", doc_id="uuid-002"),
+        MagicMock(content="청크1 내용", doc_id="uuid-001"),
+        MagicMock(content="청크2 내용", doc_id="uuid-002"),
     ]
     mock_conn = AsyncMock()
     mock_conn.execute.return_value = mock_rows

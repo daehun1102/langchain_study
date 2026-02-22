@@ -41,7 +41,7 @@ async def fetch_chunks(db_connection: str, num_samples: int) -> list[dict]:
     async with engine.begin() as conn:
         rows = await conn.execute(
             text(
-                f"SELECT document, doc_id FROM {TABLE_NAME} "
+                f"SELECT content, doc_id FROM {TABLE_NAME} "
                 "WHERE doc_id IS NOT NULL "
                 "ORDER BY RANDOM() "
                 "LIMIT :n"
@@ -49,7 +49,7 @@ async def fetch_chunks(db_connection: str, num_samples: int) -> list[dict]:
             {"n": num_samples},
         )
     await engine.dispose()
-    return [{"document": row.document, "doc_id": row.doc_id} for row in rows]
+    return [{"document": row.content, "doc_id": row.doc_id} for row in rows]
 
 
 # ── Q&A 생성 ────────────────────────────────────────────────────
