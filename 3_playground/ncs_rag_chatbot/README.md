@@ -129,8 +129,8 @@ docker run -d -p 6379:6379 --name redis redis:latest
 docker run -d --name arize-phoenix -p 6006:6006 -p 4317:4317 arizephoenix/phoenix:latest
 
 # 3. Python AI 서버
-source venv/Scripts/activate   # Windows: venv\Scripts\activate
 cd ai_server
+venv\Scripts\activate          # Mac/Linux: source venv/bin/activate
 uvicorn server:app --reload --port 8000
 
 # 4. Spring Boot (새 터미널)
