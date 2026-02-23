@@ -2,7 +2,8 @@
 # 설치: pip install -r requirements.txt
 
 # Phoenix 평가 프레임워크
-arize-phoenix-evals
+arize-phoenix          # px.Client (데이터셋 업로드, 실험 실행)
+arize-phoenix-evals    # HallucinationEvaluator, QAEvaluator, llm_classify 등
 
 # 테스트
 pytest-asyncio
