@@ -12,7 +12,6 @@ server.py — Python FastAPI AI 서버 (내부 전용)
 실행 (ai_server/ 디렉토리에서): uvicorn server:app --reload --port 8000
 """
 
-import sys
 import os
 import logging
 import traceback
