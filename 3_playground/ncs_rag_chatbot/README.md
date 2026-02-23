@@ -67,7 +67,7 @@ venv\Scripts\activate
 source venv/bin/activate
 
 # 패키지 설치
-pip install -r requirements.txt
+pip install -r ai_server/requirements.txt
 ```
 
 ### 2. 환경 변수 설정
@@ -130,6 +130,7 @@ docker run -d --name arize-phoenix -p 6006:6006 -p 4317:4317 arizephoenix/phoeni
 
 # 3. Python AI 서버
 source venv/Scripts/activate   # Windows: venv\Scripts\activate
+cd ai_server
 uvicorn server:app --reload --port 8000
 
 # 4. Spring Boot (새 터미널)
@@ -239,6 +240,8 @@ ncs_rag_chatbot/
 │           └── sql/schema.sql      # Oracle DDL
 │
 ├── ai_server/                      # Python AI 서버
+│   ├── server.py                   # FastAPI 앱 진입점
+│   ├── requirements.txt            # Python 의존성
 │   ├── agent.py                    # LangGraph ReAct Agent
 │   ├── tool.py                     # retrieve_context 도구
 │   ├── vector_store.py             # PGVectorStore (doc_id 필터)
@@ -254,8 +257,6 @@ ncs_rag_chatbot/
 │       ├── api/ncsApi.js           # Spring API 호출
 │       └── composables/useChat.js
 │
-├── server.py                       # FastAPI 앱 진입점
-├── requirements.txt                # Python 의존성
 └── .env                            # 환경 변수 (gitignore)
 ```
 
