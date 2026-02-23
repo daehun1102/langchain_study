@@ -48,13 +48,13 @@ def get_or_create_dataset(
 ):
     """Phoenix에서 데이터셋을 가져오거나 없으면 새로 생성한다."""
     try:
-        dataset = phoenix_client.get_dataset(name=dataset_config.name)
+        dataset = phoenix_client.datasets.get_dataset(dataset=dataset_config.name)
         logger.info("[eval] 기존 데이터셋 로드: %s", dataset_config.name)
         return dataset
     except Exception:
         logger.info("[eval] 데이터셋 없음. 생성 시작: %s", dataset_config.name)
         asyncio.run(create_dataset(dataset_config, db_connection=db_connection))
-        return phoenix_client.get_dataset(name=dataset_config.name)
+        return phoenix_client.datasets.get_dataset(dataset=dataset_config.name)
 
 
 def run_all(
@@ -65,7 +65,7 @@ def run_all(
     judge_model_name: str = "gpt-4o",
 ):
     """지정된 조합으로 전체 실험을 실행한다."""
-    import phoenix as px
+    from phoenix.client import Client
     from phoenix.evals import OpenAIModel
     from phoenix.experiments import run_experiment
 
@@ -78,7 +78,7 @@ def run_all(
         print(f"  - {name}")
     print()
 
-    phoenix_client = px.Client(endpoint=phoenix_endpoint)
+    phoenix_client = Client(base_url=phoenix_endpoint)
     judge_model = OpenAIModel(model=judge_model_name, temperature=0.0)
     evaluators = create_all_evaluators(judge_model)
 

@@ -89,7 +89,7 @@ def make_answer_relevance_evaluator(judge_model):
             "answer": output.get("answer", ""),
         }])
         results = llm_classify(
-            dataframe=df,
+            data=df,
             template=_ANSWER_RELEVANCE_TEMPLATE,
             model=judge_model,
             rails=["relevant", "irrelevant"],

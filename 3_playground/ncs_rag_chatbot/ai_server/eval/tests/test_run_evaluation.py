@@ -36,23 +36,22 @@ def test_get_or_create_dataset_returns_existing():
     """Phoenix에 이미 데이터셋이 있으면 그대로 반환한다."""
     mock_client = MagicMock()
     mock_dataset = MagicMock()
-    mock_client.get_dataset.return_value = mock_dataset
+    mock_client.datasets.get_dataset.return_value = mock_dataset
 
     result = get_or_create_dataset(DATASET_V1, mock_client, db_connection="test_db")
 
-    mock_client.get_dataset.assert_called_once_with(name=DATASET_V1.name)
+    mock_client.datasets.get_dataset.assert_called_once_with(dataset=DATASET_V1.name)
     assert result == mock_dataset
 
 
 def test_get_or_create_dataset_creates_when_not_found():
     """데이터셋이 없으면 create_dataset을 실행한다."""
     mock_client = MagicMock()
-    mock_client.get_dataset.side_effect = Exception("Not found")
+    mock_client.datasets.get_dataset.side_effect = [Exception("Not found"), MagicMock()]
 
     with patch("eval.run_evaluation.asyncio") as mock_asyncio, \
          patch("eval.run_evaluation.create_dataset") as mock_create:
         mock_asyncio.run = MagicMock()
-        mock_client.get_dataset.side_effect = [Exception("Not found"), MagicMock()]
         get_or_create_dataset(DATASET_V1, mock_client, db_connection="test_db")
 
     mock_asyncio.run.assert_called_once()

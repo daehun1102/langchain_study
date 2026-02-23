@@ -121,12 +121,12 @@ def upload_to_phoenix(
     config: DatasetConfig,
     qa_pairs: list[dict],
     chunks: list[dict],
-    phoenix_endpoint: str = "http://localhost:6006",
+    base_url: str = "http://localhost:6006",
 ) -> None:
     """생성된 Q&A 쌍을 Phoenix Dataset으로 업로드한다."""
-    import phoenix as px
+    from phoenix.client import Client
 
-    client = px.Client(endpoint=phoenix_endpoint)
+    client = Client(base_url=base_url)
     inputs = [{"question": qa["question"], "doc_id": chunk["doc_id"]}
               for qa, chunk in zip(qa_pairs, chunks)]
     outputs = [{"reference_answer": qa["reference_answer"]} for qa in qa_pairs]
@@ -139,8 +139,8 @@ def upload_to_phoenix(
         for chunk in chunks
     ]
 
-    dataset = client.upload_dataset(
-        dataset_name=config.name,
+    dataset = client.datasets.create_dataset(
+        name=config.name,
         inputs=inputs,
         outputs=outputs,
         metadata=metadata,
