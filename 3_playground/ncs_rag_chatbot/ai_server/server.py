@@ -149,17 +149,21 @@ async def ingest(req: IngestRequest):
 @app.post("/internal/chat", response_model=ChatResponse)
 async def chat(req: ChatRequest):
     """Spring에서 호출. Supervisor Agent가 RAG/SQL 라우팅 후 AI 응답 생성."""
-    doc_ids = req.doc_ids or []
-    config = {
-        "configurable": {
-            "thread_id": req.thread_id,
-            "doc_ids": doc_ids,
+    try:
+        doc_ids = req.doc_ids or []
+        config = {
+            "configurable": {
+                "thread_id": req.thread_id,
+                "doc_ids": doc_ids,
+            }
         }
-    }
-    last_message = await supervisor_agent.run(req.query, config=config)
-    answer = last_message.content if last_message else "응답을 생성할 수 없습니다."
-    sources = await _collect_sources(req.query, doc_ids)
-    return ChatResponse(answer=answer, sources=sources)
+        last_message = await supervisor_agent.run(req.query, config=config)
+        answer = last_message.content if last_message else "응답을 생성할 수 없습니다."
+        sources = await _collect_sources(req.query, doc_ids)
+        return ChatResponse(answer=answer, sources=sources)
+    except Exception:
+        logger.error("[chat] 오류:\n%s", traceback.format_exc())
+        raise HTTPException(status_code=500, detail="AI 응답 생성 실패")
 
 
 async def _collect_sources(query: str, doc_ids: List[str]) -> List[SourceInfo]:
