@@ -1,0 +1,56 @@
+"""
+rag_agent.py — NCS 문서 검색 전문 에이전트
+
+변경:
+- agent.py에서 이동
+- InMemorySaver checkpointer로 multi-turn 지원
+- RunnableConfig로 doc_ids 런타임 주입 (rag_tool.py의 retrieve_context가 읽음)
+"""
+from langchain.agents import create_agent
+from langchain.chat_models import init_chat_model
+from langgraph.checkpoint.memory import InMemorySaver
+from agents.base import BaseAgent
+from infra.prompt_loader import get_prompt
+from typing import List
+
+
+PROMPT_KEYS = [
+    "agent_system_prompt",
+    "answer_format_prompt",
+    "no_document_prompt",
+    "query_enhance_prompt",
+    "category_hint_prompt",
+]
+
+
+def _build_system_prompt() -> str:
+    parts = [p for k in PROMPT_KEYS if (p := get_prompt(k))]
+    return "\n\n".join(parts)
+
+
+class ChatAgent(BaseAgent):
+
+    def __init__(self, model_name: str = "gpt-4o-mini", system_prompt: str = None):
+        self.model = init_chat_model(model_name)
+        self.checkpointer = InMemorySaver()
+        self.system_prompt = system_prompt if system_prompt is not None else _build_system_prompt()
+
+    def create_agent(self, tools: List):
+        self.agent = create_agent(
+            self.model,
+            tools,
+            system_prompt=self.system_prompt,
+            checkpointer=self.checkpointer,
+        )
+
+    async def run(self, query: str, config: dict = None):
+        if not hasattr(self, "agent"):
+            raise ValueError("create_agent()를 먼저 호출하세요.")
+        last_message = None
+        async for event in self.agent.astream(
+            {"messages": [{"role": "user", "content": query}]},
+            config=config or {},
+            stream_mode="values",
+        ):
+            last_message = event["messages"][-1]
+        return last_message
