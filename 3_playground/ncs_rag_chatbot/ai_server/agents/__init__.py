@@ -1,6 +1,7 @@
 from agents.v1.sql_agent import SqlAgent
+from agents.v1.supervisor import SupervisorAgent
 
-__all__ = ["ChatAgent", "SqlAgent"]
+__all__ = ["ChatAgent", "SqlAgent", "SupervisorAgent"]
 
 
 def __getattr__(name):
