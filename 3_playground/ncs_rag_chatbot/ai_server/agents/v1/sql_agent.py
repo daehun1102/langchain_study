@@ -1,0 +1,53 @@
+"""
+sql_agent.py — 직원 이력 조회 전문 에이전트
+"""
+import langchain.agents as _lc_agents
+import langchain.chat_models as _lc_chat
+from langgraph.checkpoint.memory import InMemorySaver
+from agents.base import BaseAgent
+from tools.sql_tool import SqlToolBuilder
+from config import settings
+
+SQL_SYSTEM_PROMPT = (
+    "너는 직원의 NCS 교육 이수 내역을 조회하는 전문가야.\n"
+    "사용자가 직원 정보를 요청하면 반드시 query_employee_data 도구를 사용해서 조회해줘.\n"
+    "identifier는 사번(예: EMP001) 또는 직원 이름(예: 홍길동) 중 질문에서 파악되는 값을 사용해.\n"
+    "조회 결과를 한국어로 알기 쉽게 정리해서 답변해줘."
+)
+
+
+class SqlAgent(BaseAgent):
+
+    def __init__(self, employee_client, model_name: str = None):
+        self.model = _lc_chat.init_chat_model(model_name or settings.model_name)
+        self.checkpointer = InMemorySaver()
+        self.system_prompt = SQL_SYSTEM_PROMPT
+        tool_builder = SqlToolBuilder(employee_client)
+        self._tools = tool_builder.build_tools()
+
+    def create_agent(self, tools: list = None):
+        self.agent = _lc_agents.create_agent(
+            self.model,
+            tools or self._tools,
+            system_prompt=self.system_prompt,
+            checkpointer=self.checkpointer,
+        )
+
+    async def run(self, query: str, config: dict = None):
+        if not hasattr(self, "agent"):
+            raise ValueError("create_agent()를 먼저 호출하세요.")
+        last_message = None
+        stream = self.agent.astream(
+            {"messages": [{"role": "user", "content": query}]},
+            config=config or {},
+            stream_mode="values",
+        )
+        # astream이 async generator 또는 awaitable async generator 모두 지원
+        try:
+            async for event in stream:
+                last_message = event["messages"][-1]
+        except TypeError:
+            # test mock: astream returns a coroutine that yields an async generator
+            async for event in await stream:
+                last_message = event["messages"][-1]
+        return last_message
