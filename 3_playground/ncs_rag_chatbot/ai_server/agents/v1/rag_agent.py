@@ -6,7 +6,7 @@ rag_agent.py — NCS 문서 검색 전문 에이전트
 - InMemorySaver checkpointer로 multi-turn 지원
 - RunnableConfig로 doc_ids 런타임 주입 (rag_tool.py의 retrieve_context가 읽음)
 """
-from langchain.agents import create_agent
+import langchain.agents as _lc_agents
 from langchain.chat_models import init_chat_model
 from langgraph.checkpoint.memory import InMemorySaver
 from agents.base import BaseAgent
@@ -35,8 +35,8 @@ class ChatAgent(BaseAgent):
         self.checkpointer = InMemorySaver()
         self.system_prompt = system_prompt if system_prompt is not None else _build_system_prompt()
 
-    def create_agent(self, tools: List):
-        self.agent = create_agent(
+    def create_agent(self, tools: List = None):
+        self.agent = _lc_agents.create_agent(
             self.model,
             tools,
             system_prompt=self.system_prompt,

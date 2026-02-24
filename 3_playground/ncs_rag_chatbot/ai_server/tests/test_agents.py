@@ -16,7 +16,7 @@ async def test_sql_agent_run_returns_message():
     with patch("langchain.chat_models.init_chat_model") as mock_model, \
          patch("langchain.agents.create_agent") as mock_create:
 
-        mock_agent_instance = AsyncMock()
+        mock_agent_instance = MagicMock()
         mock_agent_instance.astream.return_value = _async_iter([
             {"messages": [MagicMock(content="홍길동의 이력 조회 완료")]}
         ])
@@ -52,7 +52,7 @@ async def test_supervisor_run_returns_message():
     with patch("langchain.chat_models.init_chat_model") as mock_model, \
          patch("langchain.agents.create_agent") as mock_create:
 
-        mock_agent_instance = AsyncMock()
+        mock_agent_instance = MagicMock()
         mock_agent_instance.astream.return_value = _async_iter([
             {"messages": [MagicMock(content="EMP001 홍길동의 교육 이수 완료")]}
         ])

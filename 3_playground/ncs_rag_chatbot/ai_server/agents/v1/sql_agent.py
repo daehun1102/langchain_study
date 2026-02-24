@@ -37,17 +37,10 @@ class SqlAgent(BaseAgent):
         if not hasattr(self, "agent"):
             raise ValueError("create_agent()를 먼저 호출하세요.")
         last_message = None
-        stream = self.agent.astream(
+        async for event in self.agent.astream(
             {"messages": [{"role": "user", "content": query}]},
             config=config or {},
             stream_mode="values",
-        )
-        # astream이 async generator 또는 awaitable async generator 모두 지원
-        try:
-            async for event in stream:
-                last_message = event["messages"][-1]
-        except TypeError:
-            # test mock: astream returns a coroutine that yields an async generator
-            async for event in await stream:
-                last_message = event["messages"][-1]
+        ):
+            last_message = event["messages"][-1]
         return last_message
