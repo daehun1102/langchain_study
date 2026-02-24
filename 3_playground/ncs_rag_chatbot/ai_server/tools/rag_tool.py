@@ -5,7 +5,7 @@ rag_tool.py — RAG 검색 도구
 from langchain.tools import tool
 from langchain_core.tools import Tool
 from langchain_core.runnables import RunnableConfig
-from typing import List, Optional
+from typing import List
 
 
 class ToolBuilder:
