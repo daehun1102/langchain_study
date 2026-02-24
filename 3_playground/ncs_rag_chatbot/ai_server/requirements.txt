@@ -7,3 +7,6 @@ arize-phoenix-evals    # HallucinationEvaluator, QAEvaluator, llm_classify 등
 
 # 테스트
 pytest-asyncio
+
+# 환경변수 설정 관리
+pydantic-settings      # BaseSettings (환경변수 → Python 객체 매핑)
