@@ -8,18 +8,17 @@ server.py — Python FastAPI AI 서버 (내부 전용)
   GET  /internal/health  — 헬스 체크
   POST /internal/ingest  — PDF 벡터 저장 (Spring 호출)
   POST /internal/chat    — RAG 채팅 (Spring 호출)
+  DELETE /internal/delete/{doc_id} — 벡터 삭제 (Spring 호출)
 
 실행 (ai_server/ 디렉토리에서): uvicorn server:app --reload --port 8000
 """
 
-import os
 import logging
 import traceback
 from contextlib import asynccontextmanager
 from typing import List, Optional
 
-# 트레이싱은 LangChain import보다 먼저 초기화해야 모든 호출을 계측한다
-from tracing import setup_tracing
+from infra.tracing import setup_tracing
 setup_tracing()
 
 from fastapi import FastAPI, HTTPException
@@ -29,31 +28,47 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from embeddings import EmbeddingModel
-from vector_store import VectorStoreManager
-from agent import ChatAgent
-from tool import ToolBuilder
+from config import settings
+from infra.embeddings import EmbeddingModel
+from infra.vector_store import VectorStoreManager
+from agents.v1.rag_agent import ChatAgent
+from agents.v1.sql_agent import SqlAgent
+from agents.v1.supervisor import SupervisorAgent
+from tools.rag_tool import ToolBuilder
+from clients.spring.v1.employee import EmployeeClientV1
 from ingest import ingest_single_document
 
 logger = logging.getLogger("ncs_server")
 
-DB_CONNECTION = os.getenv(
-    "DB_CONNECTION",
-    "postgresql+asyncpg://postgres:1234@localhost:5432/pdf_db"
-)
-
 vector_store_manager: Optional[VectorStoreManager] = None
+supervisor_agent: Optional[SupervisorAgent] = None
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """FastAPI 권장 방식의 startup/shutdown 관리."""
-    global vector_store_manager
+    global vector_store_manager, supervisor_agent
+
     emb = EmbeddingModel().get_embeddings()
-    vector_store_manager = await VectorStoreManager.create(DB_CONNECTION, emb)
-    logger.info("[server] VectorStoreManager 초기화 완료")
+    vector_store_manager = await VectorStoreManager.create(settings.db_connection, emb)
+
+    # RAG Agent
+    tool_builder = ToolBuilder(vector_store_manager)
+    rag_tools = tool_builder.build_tools()
+    rag_agent = ChatAgent()
+    rag_agent.create_agent(rag_tools)
+
+    # SQL Agent
+    employee_client = EmployeeClientV1()
+    sql_agent = SqlAgent(employee_client=employee_client)
+    sql_agent.create_agent()
+
+    # Supervisor
+    supervisor_agent = SupervisorAgent(rag_agent=rag_agent, sql_agent=sql_agent)
+    supervisor_agent.create_agent()
+
+    logger.info("[server] SupervisorAgent 초기화 완료")
     yield
-    # shutdown 정리 작업 (필요 시 추가)
 
 
 app = FastAPI(title="NCS RAG AI Server (Internal)", lifespan=lifespan)
@@ -82,6 +97,7 @@ class IngestResponse(BaseModel):
 class ChatRequest(BaseModel):
     query: str
     doc_ids: Optional[List[str]] = None
+    thread_id: str = "default"
 
 
 class SourceInfo(BaseModel):
@@ -123,7 +139,7 @@ async def delete_vectors(doc_id: str):
 async def ingest(req: IngestRequest):
     """Spring에서 PDF 업로드 후 호출. PGVector에 벡터 저장."""
     try:
-        chunks = await ingest_single_document(req.doc_id, req.file_path, DB_CONNECTION)
+        chunks = await ingest_single_document(req.doc_id, req.file_path, settings.db_connection)
         return IngestResponse(doc_id=req.doc_id, chunks=chunks, status="INDEXED")
     except Exception:
         logger.error("[ingest] 오류:\n%s", traceback.format_exc())
@@ -132,29 +148,22 @@ async def ingest(req: IngestRequest):
 
 @app.post("/internal/chat", response_model=ChatResponse)
 async def chat(req: ChatRequest):
-    """Spring에서 호출. doc_ids 범위 내 RAG 검색 후 AI 응답 생성."""
+    """Spring에서 호출. Supervisor Agent가 RAG/SQL 라우팅 후 AI 응답 생성."""
     doc_ids = req.doc_ids or []
-
-    tool_builder = ToolBuilder(vector_store_manager)
-    tools = tool_builder.build_tools(doc_ids=doc_ids)
-
-    agent = ChatAgent()
-    agent.create_agent(tools)
-
-    last_message = await agent.run(req.query)
+    config = {
+        "configurable": {
+            "thread_id": req.thread_id,
+            "doc_ids": doc_ids,
+        }
+    }
+    last_message = await supervisor_agent.run(req.query, config=config)
     answer = last_message.content if last_message else "응답을 생성할 수 없습니다."
-
     sources = await _collect_sources(req.query, doc_ids)
-
     return ChatResponse(answer=answer, sources=sources)
 
 
 async def _collect_sources(query: str, doc_ids: List[str]) -> List[SourceInfo]:
-    """벡터 스토어에서 직접 유사 문서를 검색하여 sources를 반환한다.
-
-    content_and_artifact 도구를 ainvoke()로 직접 호출하면 content(str)만
-    반환되므로, vector_store_manager를 직접 호출한다.
-    """
+    """벡터 스토어에서 직접 유사 문서를 검색하여 sources를 반환한다."""
     try:
         retrieved_docs = await vector_store_manager.similarity_search_by_doc_ids(
             query, doc_ids=doc_ids, k=4
