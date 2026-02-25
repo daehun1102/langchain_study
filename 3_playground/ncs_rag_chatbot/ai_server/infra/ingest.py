@@ -6,9 +6,9 @@ ingest.py — PDF를 PGVector에 적재하는 모듈
 - ingest_single_document(): Spring에서 단일 PDF 처리 요청 시 호출
 """
 
-from loader import DocumentLoader
-from splitter import DocumentSplitter
-from embeddings import EmbeddingModel
+from infra.loader import DocumentLoader
+from infra.splitter import DocumentSplitter
+from infra.embeddings import EmbeddingModel
 from langchain_postgres import PGEngine, PGVectorStore, Column
 from sqlalchemy.ext.asyncio import create_async_engine
 from dotenv import load_dotenv
@@ -96,5 +96,5 @@ if __name__ == "__main__":
         asyncio.run(ingest_single_document(sys.argv[1], sys.argv[2], db))
     else:
         print("Usage:")
-        print("  python ingest.py init               # 테이블 초기화")
-        print("  python ingest.py <doc_id> <path>    # 단일 파일 적재")
+        print("  python -m infra.ingest init               # 테이블 초기화")
+        print("  python -m infra.ingest <doc_id> <path>    # 단일 파일 적재")

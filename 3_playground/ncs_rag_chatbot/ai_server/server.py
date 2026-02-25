@@ -36,7 +36,7 @@ from agents.v1.sql_agent import SqlAgent
 from agents.v1.supervisor import SupervisorAgent
 from tools.rag_tool import ToolBuilder
 from clients.spring.v1.employee import EmployeeClientV1
-from ingest import ingest_single_document
+from infra.ingest import ingest_single_document
 
 logger = logging.getLogger("ncs_server")
 
