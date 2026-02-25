@@ -1,15 +1,13 @@
 """
 init_prompts.py — Redis에 초기 프롬프트 데이터를 등록하는 스크립트
 
-실행: python ai_server/init_prompts.py
+실행: python -m scripts.init_prompts
 Redis가 실행 중이어야 합니다.
 """
 
 import redis
-import os
+from config import settings
 
-REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
-REDIS_PORT = int(os.getenv("REDIS_PORT", "6379"))
 PREFIX = "prompt:"
 
 PROMPTS = {
@@ -47,11 +45,11 @@ PROMPTS = {
 }
 
 if __name__ == "__main__":
-    r = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, decode_responses=True)
+    r = redis.Redis(host=settings.redis_host, port=settings.redis_port, decode_responses=True)
     try:
         r.ping()
     except redis.ConnectionError:
-        print(f"[ERROR] Redis에 연결할 수 없습니다: {REDIS_HOST}:{REDIS_PORT}")
+        print(f"[ERROR] Redis에 연결할 수 없습니다: {settings.redis_host}:{settings.redis_port}")
         raise SystemExit(1)
 
     for key, value in PROMPTS.items():
