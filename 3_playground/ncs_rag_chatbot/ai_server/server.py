@@ -31,11 +31,9 @@ load_dotenv()
 from config import settings
 from infra.embeddings import EmbeddingModel
 from infra.vector_store import VectorStoreManager
-from agents.v1.rag_agent import ChatAgent
-from agents.v1.sql_agent import SqlAgent
-from agents.v1.supervisor import SupervisorAgent
-from tools.rag_tool import ToolBuilder
-from clients.spring.v1.employee import EmployeeClientV1
+from agents import ChatAgent, SqlAgent, SupervisorAgent
+from tools import ToolBuilder
+from clients.spring import EmployeeClientV1
 from infra.ingest import ingest_single_document
 
 logger = logging.getLogger("ncs_server")
