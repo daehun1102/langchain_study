@@ -48,7 +48,7 @@ async def lifespan(app: FastAPI):
     emb = EmbeddingModel().get_embeddings()
     vector_store_manager = await VectorStoreManager.create(settings.db_connection, emb)
 
-    agent = await create_agent(vector_store_manager)
+    agent = await create_agent(vector_store_manager, version=settings.agent_version)
 
     logger.info("[server] Agent 초기화 완료")
     yield
