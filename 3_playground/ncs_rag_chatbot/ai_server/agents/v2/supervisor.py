@@ -7,6 +7,7 @@ LangChain handoffs 패턴 적용:
 - 3단계 순차 워크플로우: sql → rag → feedback
 """
 from typing import Literal, Callable
+from typing_extensions import NotRequired
 
 import langchain.agents as _lc_agents
 import langchain.chat_models as _lc_chat
@@ -16,7 +17,6 @@ from langchain.tools import tool, ToolRuntime
 from langchain.messages import ToolMessage
 from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.types import Command
-from typing_extensions import NotRequired
 
 from agents.base import BaseAgent
 from config import settings
@@ -91,47 +91,12 @@ FEEDBACK_STEP_PROMPT = (
 )
 
 
-# ── 단계별 설정 ────────────────────────────────────────────────
-
-STEP_CONFIG: dict = {
-    "sql": {
-        "prompt": SQL_STEP_PROMPT,
-        "tools": [],   # create_agent()에서 sql_tools + [handoff_to_rag] 로 채워진다
-    },
-    "rag": {
-        "prompt": RAG_STEP_PROMPT,
-        "tools": [],   # create_agent()에서 rag_tools + [handoff_to_feedback] 로 채워진다
-    },
-    "feedback": {
-        "prompt": FEEDBACK_STEP_PROMPT,
-        "tools": [],   # 최종 답변 생성, 도구 불필요
-    },
-}
-
-
-# ── 미들웨어 ───────────────────────────────────────────────────
-
-@wrap_model_call
-async def apply_ncs_step_config(
-    request: ModelRequest,
-    handler: Callable[[ModelRequest], ModelResponse],
-) -> ModelResponse:
-    """current_step에 따라 system_prompt와 tools를 매 모델 호출 전에 교체한다."""
-    current_step = request.state.get("current_step", "sql")
-    config = STEP_CONFIG[current_step]
-    request = request.override(
-        system_prompt=config["prompt"],
-        tools=config["tools"],
-    )
-    return await handler(request)
-
-
 # ── NCSHandoffAgent ────────────────────────────────────────────
 
 class NCSHandoffAgent(BaseAgent):
     """handoffs 패턴 기반 NCS 피드백 에이전트.
 
-    단일 create_agent 인스턴스가 current_step 상태에 따라
+    단일 LangGraph 에이전트 인스턴스가 current_step 상태에 따라
     sql → rag → feedback 3단계 순차 워크플로우를 수행한다.
     """
 
@@ -139,12 +104,44 @@ class NCSHandoffAgent(BaseAgent):
         self.model = _lc_chat.init_chat_model(model_name or settings.model_name)
         self._rag_tools = rag_tools
         self._sql_tools = sql_tools
+        self.checkpointer = InMemorySaver()
 
     def create_agent(self, tools: list = None):
-        # 단계별 도구 조합을 STEP_CONFIG에 주입
-        STEP_CONFIG["sql"]["tools"] = self._sql_tools + [handoff_to_rag]
-        STEP_CONFIG["rag"]["tools"] = self._rag_tools + [handoff_to_feedback]
-        STEP_CONFIG["feedback"]["tools"] = []
+        if tools is not None:
+            raise ValueError(
+                "NCSHandoffAgent does not support external tool override. "
+                "Pass sql_tools and rag_tools to __init__ instead."
+            )
+
+        # 단계별 설정을 인스턴스 범위 클로저로 구성 (전역 상태 없음)
+        step_config = {
+            "sql": {
+                "prompt": SQL_STEP_PROMPT,
+                "tools": self._sql_tools + [handoff_to_rag],
+            },
+            "rag": {
+                "prompt": RAG_STEP_PROMPT,
+                "tools": self._rag_tools + [handoff_to_feedback],
+            },
+            "feedback": {
+                "prompt": FEEDBACK_STEP_PROMPT,
+                "tools": [],
+            },
+        }
+
+        @wrap_model_call
+        async def apply_ncs_step_config(
+            request: ModelRequest,
+            handler: Callable[[ModelRequest], ModelResponse],
+        ) -> ModelResponse:
+            """current_step에 따라 system_prompt와 tools를 매 모델 호출 전에 교체한다."""
+            current_step = request.state.get("current_step", "sql")
+            config = step_config[current_step]
+            request = request.override(
+                system_prompt=config["prompt"],
+                tools=config["tools"],
+            )
+            return await handler(request)
 
         all_tools = self._sql_tools + self._rag_tools + [handoff_to_rag, handoff_to_feedback]
 
@@ -153,7 +150,7 @@ class NCSHandoffAgent(BaseAgent):
             tools=all_tools,
             state_schema=NCSAgentState,
             middleware=[apply_ncs_step_config],
-            checkpointer=InMemorySaver(),
+            checkpointer=self.checkpointer,
         )
 
     async def run(self, query: str, config: dict = None):

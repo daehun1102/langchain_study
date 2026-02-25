@@ -107,59 +107,67 @@ async def test_create_agent_returns_base_agent():
 
 # ── v2 handoffs agent tests ──────────────────────────────────────
 
-async def test_ncs_handoff_agent_step_config_has_three_steps():
-    """STEP_CONFIG는 sql, rag, feedback 세 단계를 가진다."""
-    from agents.v2.supervisor import STEP_CONFIG
+async def test_ncs_handoff_agent_has_three_step_workflow():
+    """NCSHandoffAgent는 sql, rag, feedback 세 단계 워크플로우를 지원한다."""
+    from agents.v2.supervisor import NCSHandoffAgent, handoff_to_rag, handoff_to_feedback
 
-    assert "sql" in STEP_CONFIG
-    assert "rag" in STEP_CONFIG
-    assert "feedback" in STEP_CONFIG
+    mock_sql_tool = MagicMock()
+    mock_sql_tool.name = "query_employee_data"
+    mock_rag_tool = MagicMock()
+    mock_rag_tool.name = "retrieve_context"
 
-    for step, cfg in STEP_CONFIG.items():
-        assert "prompt" in cfg
-        assert "tools" in cfg
-
-
-async def test_ncs_handoff_agent_sql_step_has_handoff_to_rag_tool():
-    """sql 단계는 handoff_to_rag 도구를 STEP_CONFIG에 포함한다.
-
-    Note: STEP_CONFIG["sql"]["tools"]는 create_agent() 호출 후에 채워지므로
-    NCSHandoffAgent를 인스턴스화하고 create_agent()를 호출한 후 확인한다.
-    """
-    from agents.v2.supervisor import NCSHandoffAgent, STEP_CONFIG
-
-    with patch("langchain.agents.create_agent"), \
+    with patch("langchain.agents.create_agent") as mock_create, \
          patch("langchain.chat_models.init_chat_model"):
-        agent = NCSHandoffAgent(rag_tools=[], sql_tools=[])
+        mock_create.return_value = MagicMock()
+        agent = NCSHandoffAgent(
+            rag_tools=[mock_rag_tool],
+            sql_tools=[mock_sql_tool],
+        )
         agent.create_agent()
 
-    tool_names = [t.name for t in STEP_CONFIG["sql"]["tools"]]
+    # create_agent was called with all_tools including both handoff tools
+    call_kwargs = mock_create.call_args[1]
+    tool_names = [t.name for t in call_kwargs["tools"]]
     assert "handoff_to_rag" in tool_names
-
-
-async def test_ncs_handoff_agent_rag_step_has_handoff_to_feedback_tool():
-    """rag 단계는 handoff_to_feedback 도구를 STEP_CONFIG에 포함한다."""
-    from agents.v2.supervisor import NCSHandoffAgent, STEP_CONFIG
-
-    with patch("langchain.agents.create_agent"), \
-         patch("langchain.chat_models.init_chat_model"):
-        agent = NCSHandoffAgent(rag_tools=[], sql_tools=[])
-        agent.create_agent()
-
-    tool_names = [t.name for t in STEP_CONFIG["rag"]["tools"]]
     assert "handoff_to_feedback" in tool_names
+    assert "query_employee_data" in tool_names
+    assert "retrieve_context" in tool_names
 
 
-async def test_ncs_handoff_agent_feedback_step_has_no_tools():
-    """feedback 단계는 도구가 없다."""
-    from agents.v2.supervisor import NCSHandoffAgent, STEP_CONFIG
+async def test_ncs_handoff_agent_create_agent_rejects_tools_override():
+    """create_agent(tools=...)를 호출하면 ValueError가 발생한다."""
+    from agents.v2.supervisor import NCSHandoffAgent
 
     with patch("langchain.agents.create_agent"), \
          patch("langchain.chat_models.init_chat_model"):
         agent = NCSHandoffAgent(rag_tools=[], sql_tools=[])
+        with pytest.raises(ValueError, match="external tool override"):
+            agent.create_agent(tools=[MagicMock()])
+
+
+async def test_ncs_handoff_agent_uses_inmemory_checkpointer():
+    """NCSHandoffAgent는 InMemorySaver를 체크포인터로 사용한다."""
+    from agents.v2.supervisor import NCSHandoffAgent
+    from langgraph.checkpoint.memory import InMemorySaver
+
+    with patch("langchain.agents.create_agent") as mock_create, \
+         patch("langchain.chat_models.init_chat_model"):
+        mock_create.return_value = MagicMock()
+        agent = NCSHandoffAgent(rag_tools=[], sql_tools=[])
         agent.create_agent()
 
-    assert STEP_CONFIG["feedback"]["tools"] == []
+    call_kwargs = mock_create.call_args[1]
+    assert isinstance(call_kwargs["checkpointer"], InMemorySaver)
+
+
+async def test_ncs_handoff_agent_handoff_tools_are_registered():
+    """handoff_to_rag, handoff_to_feedback는 @tool로 등록된 LangChain 도구다."""
+    from agents.v2.supervisor import handoff_to_rag, handoff_to_feedback
+
+    assert hasattr(handoff_to_rag, "name")
+    assert handoff_to_rag.name == "handoff_to_rag"
+    assert hasattr(handoff_to_feedback, "name")
+    assert handoff_to_feedback.name == "handoff_to_feedback"
 
 
 async def test_ncs_handoff_agent_run_returns_message():
