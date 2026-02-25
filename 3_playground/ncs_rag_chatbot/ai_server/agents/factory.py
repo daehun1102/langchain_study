@@ -3,13 +3,29 @@ from agents.base import BaseAgent
 from agents.v1.rag_agent import ChatAgent
 from agents.v1.sql_agent import SqlAgent
 from agents.v1.supervisor import SupervisorAgent
+from agents.v2.supervisor import NCSHandoffAgent
 from tools.rag_tool import ToolBuilder
+from tools.sql_tool import SqlToolBuilder
 from clients.spring.v1.employee import EmployeeClientV1
 from infra.vector_store import VectorStoreManager
 
 
-async def create_agent(vsm: VectorStoreManager) -> BaseAgent:
-    """VectorStoreManager를 받아 완전히 조립된 Agent를 반환한다."""
+async def create_agent(vsm: VectorStoreManager, version: str = "v1") -> BaseAgent:
+    """VectorStoreManager를 받아 완전히 조립된 Agent를 반환한다.
+
+    Args:
+        vsm: VectorStoreManager 인스턴스
+        version: 에이전트 버전 ("v1" | "v2"). 기본값 "v1".
+    """
+    if version == "v2":
+        rag_tools = ToolBuilder(vsm).build_tools()
+        employee_client = EmployeeClientV1()
+        sql_tools = SqlToolBuilder(employee_client).build_tools()
+        agent = NCSHandoffAgent(rag_tools=rag_tools, sql_tools=sql_tools)
+        agent.create_agent()
+        return agent
+
+    # v1 기존 코드 (변경 없음)
     rag_tools = ToolBuilder(vsm).build_tools()
 
     rag_agent = ChatAgent()

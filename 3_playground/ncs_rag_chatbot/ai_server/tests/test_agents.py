@@ -192,3 +192,31 @@ async def test_ncs_handoff_agent_run_returns_message():
 
     assert result is not None
     assert "EMP001" in result.content
+
+
+async def test_create_agent_v2_returns_base_agent():
+    """create_agent(vsm, version='v2')는 NCSHandoffAgent(BaseAgent)를 반환한다."""
+    from agents.factory import create_agent
+    from agents.base import BaseAgent
+
+    mock_vsm = MagicMock()
+
+    with patch("agents.factory.ToolBuilder") as mock_tb, \
+         patch("agents.factory.SqlToolBuilder") as mock_sql_tb, \
+         patch("agents.factory.NCSHandoffAgent") as mock_v2_cls, \
+         patch("agents.factory.EmployeeClientV1") as mock_emp_cls:
+
+        mock_tb.return_value.build_tools.return_value = []
+        mock_sql_tb.return_value.build_tools.return_value = []
+
+        mock_agent = MagicMock(spec=BaseAgent)
+        mock_v2_cls.return_value = mock_agent
+
+        result = await create_agent(mock_vsm, version="v2")
+
+    assert isinstance(result, BaseAgent)
+    mock_v2_cls.assert_called_once_with(
+        rag_tools=[],
+        sql_tools=[],
+    )
+    mock_agent.create_agent.assert_called_once()
