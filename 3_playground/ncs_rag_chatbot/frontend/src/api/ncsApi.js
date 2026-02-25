@@ -59,3 +59,17 @@ export async function deleteDocument(docId) {
   if (!res.ok) throw new Error(`Delete failed: ${res.status}`)
   return true
 }
+
+export async function sendFeedbackChat(query, threadId) {
+  const res = await fetch(`${BASE_URL}/api/chat`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ query, threadId }),
+  })
+
+  if (!res.ok) {
+    throw new Error(`Server error: ${res.status}`)
+  }
+
+  return res.json()
+}
