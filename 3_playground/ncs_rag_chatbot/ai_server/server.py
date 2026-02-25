@@ -131,7 +131,7 @@ async def ingest(req: IngestRequest):
 
 @app.post("/internal/chat", response_model=ChatResponse)
 async def chat(req: ChatRequest):
-    """Spring에서 호출. Supervisor Agent가 RAG/SQL 라우팅 후 AI 응답 생성."""
+    """Spring에서 호출. Agent를 통해 AI 응답 생성."""
     try:
         doc_ids = req.doc_ids or []
         config = {
