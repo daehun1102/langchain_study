@@ -68,3 +68,36 @@ async def test_supervisor_run_returns_message():
 
     assert result is not None
     assert "EMP001" in result.content
+
+
+async def test_create_agent_returns_base_agent():
+    """create_agent(vsm)는 BaseAgent를 반환해야 한다."""
+    from agents.factory import create_agent
+    from agents.base import BaseAgent
+
+    mock_vsm = MagicMock()
+
+    with patch("agents.factory.ToolBuilder") as mock_tb, \
+         patch("agents.factory.ChatAgent") as mock_chat_cls, \
+         patch("agents.factory.SqlAgent") as mock_sql_cls, \
+         patch("agents.factory.SupervisorAgent") as mock_sup_cls, \
+         patch("agents.factory.EmployeeClientV1") as mock_emp_cls:
+
+        mock_tb.return_value.build_tools.return_value = []
+
+        mock_chat = MagicMock(spec=BaseAgent)
+        mock_chat_cls.return_value = mock_chat
+
+        mock_sql = MagicMock(spec=BaseAgent)
+        mock_sql_cls.return_value = mock_sql
+
+        mock_sup = MagicMock(spec=BaseAgent)
+        mock_sup_cls.return_value = mock_sup
+
+        result = await create_agent(mock_vsm)
+
+    assert isinstance(result, BaseAgent)
+    mock_tb.assert_called_once_with(mock_vsm)
+    mock_chat.create_agent.assert_called_once_with([])
+    mock_sql.create_agent.assert_called_once()
+    mock_sup.create_agent.assert_called_once()

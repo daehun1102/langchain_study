@@ -1,5 +1,4 @@
-from agents.v1.rag_agent import ChatAgent
-from agents.v1.sql_agent import SqlAgent
-from agents.v1.supervisor import SupervisorAgent
+from agents.base import BaseAgent
+from agents.factory import create_agent
 
-__all__ = ["ChatAgent", "SqlAgent", "SupervisorAgent"]
+__all__ = ["BaseAgent", "create_agent"]
