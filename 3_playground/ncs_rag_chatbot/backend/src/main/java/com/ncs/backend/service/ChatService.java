@@ -23,10 +23,11 @@ public class ChatService {
         List<String> docIds = documentService.findDocIdsByCategory(
                 req.getMainCategory(), req.getSubCategory()
         );
-        log.info("[ChatService] query={}, docIds={}", req.getQuery(), docIds);
+        log.info("[ChatService] query={}, docIds={}, threadId={}", req.getQuery(), docIds, req.getThreadId());
 
-        // 2. Python AI 서버로 query + doc_ids 전달
-        InternalChatRequest internalReq = new InternalChatRequest(req.getQuery(), docIds);
+        // 2. Python AI 서버로 query + doc_ids + threadId 전달
+        String threadId = req.getThreadId() != null ? req.getThreadId() : "default";
+        InternalChatRequest internalReq = new InternalChatRequest(req.getQuery(), docIds, threadId);
         ChatResponse response = pythonRestClient.post()
                 .uri("/internal/chat")
                 .body(internalReq)
