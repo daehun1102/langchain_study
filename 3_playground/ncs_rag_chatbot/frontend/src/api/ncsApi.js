@@ -60,7 +60,7 @@ export async function deleteDocument(docId) {
   return true
 }
 
-export async function sendFeedbackChat(query, threadId) {
+export async function sendFeedbackChat(query, threadId = null) {
   const body = { query }
   if (threadId) body.threadId = threadId
 
