@@ -12,4 +12,7 @@ public class InternalChatRequest {
 
     @JsonProperty("doc_ids")
     private List<String> docIds;
+
+    @JsonProperty("thread_id")
+    private String threadId;
 }
