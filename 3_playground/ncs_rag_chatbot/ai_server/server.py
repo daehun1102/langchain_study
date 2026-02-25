@@ -31,41 +31,26 @@ load_dotenv()
 from config import settings
 from infra.embeddings import EmbeddingModel
 from infra.vector_store import VectorStoreManager
-from agents import ChatAgent, SqlAgent, SupervisorAgent
-from tools import ToolBuilder
-from clients.spring import EmployeeClientV1
+from agents import create_agent, BaseAgent
 from infra.ingest import ingest_single_document
 
 logger = logging.getLogger("ncs_server")
 
 vector_store_manager: Optional[VectorStoreManager] = None
-supervisor_agent: Optional[SupervisorAgent] = None
+agent: Optional[BaseAgent] = None
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """FastAPI 권장 방식의 startup/shutdown 관리."""
-    global vector_store_manager, supervisor_agent
+    global vector_store_manager, agent
 
     emb = EmbeddingModel().get_embeddings()
     vector_store_manager = await VectorStoreManager.create(settings.db_connection, emb)
 
-    # RAG Agent
-    tool_builder = ToolBuilder(vector_store_manager)
-    rag_tools = tool_builder.build_tools()
-    rag_agent = ChatAgent()
-    rag_agent.create_agent(rag_tools)
+    agent = await create_agent(vector_store_manager)
 
-    # SQL Agent
-    employee_client = EmployeeClientV1()
-    sql_agent = SqlAgent(employee_client=employee_client)
-    sql_agent.create_agent()
-
-    # Supervisor
-    supervisor_agent = SupervisorAgent(rag_agent=rag_agent, sql_agent=sql_agent)
-    supervisor_agent.create_agent()
-
-    logger.info("[server] SupervisorAgent 초기화 완료")
+    logger.info("[server] Agent 초기화 완료")
     yield
 
 
@@ -155,7 +140,7 @@ async def chat(req: ChatRequest):
                 "doc_ids": doc_ids,
             }
         }
-        last_message = await supervisor_agent.run(req.query, config=config)
+        last_message = await agent.run(req.query, config=config)
         answer = last_message.content if last_message else "응답을 생성할 수 없습니다."
         sources = await _collect_sources(req.query, doc_ids)
         return ChatResponse(answer=answer, sources=sources)
