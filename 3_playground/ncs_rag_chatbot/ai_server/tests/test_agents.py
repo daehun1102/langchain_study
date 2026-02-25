@@ -103,3 +103,84 @@ async def test_create_agent_returns_base_agent():
     mock_sup.create_agent.assert_called_once()
     mock_emp_cls.assert_called_once_with()
     mock_sql_cls.assert_called_once_with(employee_client=mock_emp_cls.return_value)
+
+
+# ── v2 handoffs agent tests ──────────────────────────────────────
+
+async def test_ncs_handoff_agent_step_config_has_three_steps():
+    """STEP_CONFIG는 sql, rag, feedback 세 단계를 가진다."""
+    from agents.v2.supervisor import STEP_CONFIG
+
+    assert "sql" in STEP_CONFIG
+    assert "rag" in STEP_CONFIG
+    assert "feedback" in STEP_CONFIG
+
+    for step, cfg in STEP_CONFIG.items():
+        assert "prompt" in cfg
+        assert "tools" in cfg
+
+
+async def test_ncs_handoff_agent_sql_step_has_handoff_to_rag_tool():
+    """sql 단계는 handoff_to_rag 도구를 STEP_CONFIG에 포함한다.
+
+    Note: STEP_CONFIG["sql"]["tools"]는 create_agent() 호출 후에 채워지므로
+    NCSHandoffAgent를 인스턴스화하고 create_agent()를 호출한 후 확인한다.
+    """
+    from agents.v2.supervisor import NCSHandoffAgent, STEP_CONFIG
+
+    with patch("langchain.agents.create_agent"), \
+         patch("langchain.chat_models.init_chat_model"):
+        agent = NCSHandoffAgent(rag_tools=[], sql_tools=[])
+        agent.create_agent()
+
+    tool_names = [t.name for t in STEP_CONFIG["sql"]["tools"]]
+    assert "handoff_to_rag" in tool_names
+
+
+async def test_ncs_handoff_agent_rag_step_has_handoff_to_feedback_tool():
+    """rag 단계는 handoff_to_feedback 도구를 STEP_CONFIG에 포함한다."""
+    from agents.v2.supervisor import NCSHandoffAgent, STEP_CONFIG
+
+    with patch("langchain.agents.create_agent"), \
+         patch("langchain.chat_models.init_chat_model"):
+        agent = NCSHandoffAgent(rag_tools=[], sql_tools=[])
+        agent.create_agent()
+
+    tool_names = [t.name for t in STEP_CONFIG["rag"]["tools"]]
+    assert "handoff_to_feedback" in tool_names
+
+
+async def test_ncs_handoff_agent_feedback_step_has_no_tools():
+    """feedback 단계는 도구가 없다."""
+    from agents.v2.supervisor import NCSHandoffAgent, STEP_CONFIG
+
+    with patch("langchain.agents.create_agent"), \
+         patch("langchain.chat_models.init_chat_model"):
+        agent = NCSHandoffAgent(rag_tools=[], sql_tools=[])
+        agent.create_agent()
+
+    assert STEP_CONFIG["feedback"]["tools"] == []
+
+
+async def test_ncs_handoff_agent_run_returns_message():
+    """NCSHandoffAgent.run()은 마지막 메시지를 반환한다."""
+    from agents.v2.supervisor import NCSHandoffAgent
+
+    with patch("langchain.agents.create_agent") as mock_create, \
+         patch("langchain.chat_models.init_chat_model"):
+
+        mock_agent_instance = MagicMock()
+        mock_agent_instance.astream.return_value = _async_iter([
+            {"messages": [MagicMock(content="EMP001 종합 피드백 완료")]}
+        ])
+        mock_create.return_value = mock_agent_instance
+
+        agent = NCSHandoffAgent(rag_tools=[], sql_tools=[])
+        agent.create_agent()
+        result = await agent.run(
+            "EMP001의 NCS 과제 피드백",
+            config={"configurable": {"thread_id": "test"}}
+        )
+
+    assert result is not None
+    assert "EMP001" in result.content
