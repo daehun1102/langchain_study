@@ -101,3 +101,5 @@ async def test_create_agent_returns_base_agent():
     mock_chat.create_agent.assert_called_once_with([])
     mock_sql.create_agent.assert_called_once()
     mock_sup.create_agent.assert_called_once()
+    mock_emp_cls.assert_called_once_with()
+    mock_sql_cls.assert_called_once_with(employee_client=mock_emp_cls.return_value)

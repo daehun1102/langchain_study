@@ -5,12 +5,12 @@ from agents.v1.sql_agent import SqlAgent
 from agents.v1.supervisor import SupervisorAgent
 from tools.rag_tool import ToolBuilder
 from clients.spring.v1.employee import EmployeeClientV1
+from infra.vector_store import VectorStoreManager
 
 
-async def create_agent(vsm) -> BaseAgent:
+async def create_agent(vsm: VectorStoreManager) -> BaseAgent:
     """VectorStoreManager를 받아 완전히 조립된 Agent를 반환한다."""
-    tool_builder = ToolBuilder(vsm)
-    rag_tools = tool_builder.build_tools()
+    rag_tools = ToolBuilder(vsm).build_tools()
 
     rag_agent = ChatAgent()
     rag_agent.create_agent(rag_tools)
