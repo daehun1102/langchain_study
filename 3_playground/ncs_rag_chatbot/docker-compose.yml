@@ -1,0 +1,47 @@
+services:
+
+  # ── PostgreSQL + pgvector ──────────────────────────────────────────
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: ncs-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: "1234"
+      POSTGRES_DB: pdf_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d pdf_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Redis ──────────────────────────────────────────────────────────
+  redis:
+    image: redis/redis-stack:latest
+    container_name: ncs-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+      - "8001:8001"   # RedisInsight UI
+    volumes:
+      - redis_data:/data
+
+  # ── Arize Phoenix ──────────────────────────────────────────────────
+  phoenix:
+    image: arizephoenix/phoenix:latest
+    container_name: ncs-phoenix
+    restart: unless-stopped
+    ports:
+      - "6006:6006"   # Phoenix UI
+      - "4317:4317"   # OTLP gRPC
+    volumes:
+      - phoenix_data:/phoenix/.phoenix
+
+volumes:
+  postgres_data:
+  redis_data:
+  phoenix_data:
