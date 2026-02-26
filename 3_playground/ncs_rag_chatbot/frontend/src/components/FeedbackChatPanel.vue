@@ -65,10 +65,11 @@ const {
 
 <style scoped>
 .chat-panel {
+  flex: 1;
   display: flex;
   flex-direction: column;
-  height: 100%;
   min-width: 0;
+  min-height: 0;
 }
 
 .panel-header {
@@ -115,6 +116,7 @@ const {
 .messages-scroll {
   flex: 1;
   overflow-y: auto;
+  min-height: 0;
   padding: 1rem 1.25rem;
 }
 

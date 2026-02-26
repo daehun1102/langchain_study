@@ -19,9 +19,10 @@ import FeedbackChatPanel from './FeedbackChatPanel.vue'
 
 <style scoped>
 .feedback-view {
+  flex: 1;
   display: flex;
   flex-direction: column;
-  height: 100%;
+  min-height: 0;
 }
 
 .feedback-header {
