@@ -109,7 +109,7 @@ async def test_create_agent_returns_base_agent():
 
 async def test_ncs_handoff_agent_has_three_step_workflow():
     """NCSHandoffAgent는 sql, rag, feedback 세 단계 워크플로우를 지원한다."""
-    from agents.v2.supervisor import NCSHandoffAgent, handoff_to_rag, handoff_to_feedback
+    from agents.v2.supervisor import NCSHandoffAgent
 
     mock_sql_tool = MagicMock()
     mock_sql_tool.name = "query_employee_data"
@@ -125,11 +125,10 @@ async def test_ncs_handoff_agent_has_three_step_workflow():
         )
         agent.create_agent()
 
-    # create_agent was called with all_tools including both handoff tools
     call_kwargs = mock_create.call_args[1]
     tool_names = [t.name for t in call_kwargs["tools"]]
-    assert "handoff_to_rag" in tool_names
-    assert "handoff_to_feedback" in tool_names
+    assert "complete_sql_step" in tool_names
+    assert "complete_rag_step" in tool_names
     assert "query_employee_data" in tool_names
     assert "retrieve_context" in tool_names
 
@@ -160,14 +159,14 @@ async def test_ncs_handoff_agent_uses_inmemory_checkpointer():
     assert isinstance(call_kwargs["checkpointer"], InMemorySaver)
 
 
-async def test_ncs_handoff_agent_handoff_tools_are_registered():
-    """handoff_to_rag, handoff_to_feedback는 @tool로 등록된 LangChain 도구다."""
-    from agents.v2.supervisor import handoff_to_rag, handoff_to_feedback
+async def test_ncs_handoff_agent_transition_tools_are_registered():
+    """complete_sql_step, complete_rag_step는 @tool로 등록된 LangChain 도구다."""
+    from agents.v2.supervisor import complete_sql_step, complete_rag_step
 
-    assert hasattr(handoff_to_rag, "name")
-    assert handoff_to_rag.name == "handoff_to_rag"
-    assert hasattr(handoff_to_feedback, "name")
-    assert handoff_to_feedback.name == "handoff_to_feedback"
+    assert hasattr(complete_sql_step, "name")
+    assert complete_sql_step.name == "complete_sql_step"
+    assert hasattr(complete_rag_step, "name")
+    assert complete_rag_step.name == "complete_rag_step"
 
 
 async def test_ncs_handoff_agent_run_returns_message():
