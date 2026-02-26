@@ -37,20 +37,22 @@ from infra.ingest import ingest_single_document
 logger = logging.getLogger("ncs_server")
 
 vector_store_manager: Optional[VectorStoreManager] = None
-agent: Optional[BaseAgent] = None
+agent_v1: Optional[BaseAgent] = None
+agent_v2: Optional[BaseAgent] = None
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """FastAPI 권장 방식의 startup/shutdown 관리."""
-    global vector_store_manager, agent
+    global vector_store_manager, agent_v1, agent_v2
 
     emb = EmbeddingModel().get_embeddings()
     vector_store_manager = await VectorStoreManager.create(settings.db_connection, emb)
 
-    agent = await create_agent(vector_store_manager, version=settings.agent_version)
+    agent_v1 = await create_agent(vector_store_manager, version="v1")
+    agent_v2 = await create_agent(vector_store_manager, version="v2")
 
-    logger.info("[server] Agent 초기화 완료")
+    logger.info("[server] Agent v1/v2 초기화 완료")
     yield
 
 
@@ -81,6 +83,7 @@ class ChatRequest(BaseModel):
     query: str
     doc_ids: Optional[List[str]] = None
     thread_id: str = "default"
+    version: str = "v1"          # ← 추가
 
 
 class SourceInfo(BaseModel):
@@ -131,7 +134,6 @@ async def ingest(req: IngestRequest):
 
 @app.post("/internal/chat", response_model=ChatResponse)
 async def chat(req: ChatRequest):
-    """Spring에서 호출. Agent를 통해 AI 응답 생성."""
     try:
         doc_ids = req.doc_ids or []
         config = {
@@ -140,7 +142,8 @@ async def chat(req: ChatRequest):
                 "doc_ids": doc_ids,
             }
         }
-        last_message = await agent.run(req.query, config=config)
+        selected_agent = agent_v2 if req.version == "v2" else agent_v1
+        last_message = await selected_agent.run(req.query, config=config)
         answer = last_message.content if last_message else "응답을 생성할 수 없습니다."
         sources = await _collect_sources(req.query, doc_ids)
         return ChatResponse(answer=answer, sources=sources)
