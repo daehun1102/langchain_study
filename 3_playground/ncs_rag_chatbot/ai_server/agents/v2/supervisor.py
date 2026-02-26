@@ -35,7 +35,7 @@ class NCSAgentState(AgentState):
 # ── 핸드오프 도구 ──────────────────────────────────────────────
 
 @tool
-def handoff_to_rag(runtime: ToolRuntime[None, NCSAgentState]) -> Command:
+def complete_sql_step(runtime: ToolRuntime[None, NCSAgentState]) -> Command:
     """직원 이력 조회 완료 후 NCS 문서 검색 단계로 전환한다."""
     return Command(
         update={
@@ -51,7 +51,7 @@ def handoff_to_rag(runtime: ToolRuntime[None, NCSAgentState]) -> Command:
 
 
 @tool
-def handoff_to_feedback(runtime: ToolRuntime[None, NCSAgentState]) -> Command:
+def complete_rag_step(runtime: ToolRuntime[None, NCSAgentState]) -> Command:
     """NCS 문서 검색 완료 후 종합 피드백 생성 단계로 전환한다."""
     return Command(
         update={
@@ -72,20 +72,29 @@ SQL_STEP_PROMPT = (
     "너는 NCS 직원 이력 조회 전문가야.\n"
     "사용자 메시지에서 사번(예: EMP001) 또는 직원 이름을 파악하여 "
     "query_employee_data 도구로 이력을 조회해.\n"
-    "조회가 완료되면 반드시 handoff_to_rag 도구를 호출해서 NCS 문서 검색 단계로 전환해."
+    "조회가 완료되면:\n"
+    "1. 결과를 사용자에게 간략히 요약해서 보여줘\n"
+    "2. complete_sql_step 도구를 호출해서 다음 단계로 전환해\n"
+    "절대로 직접 NCS 문서 검색을 수행하지 마."
 )
 
 RAG_STEP_PROMPT = (
     "너는 NCS 문서 검색 전문가야.\n"
-    "사용자 메시지와 이전 직원 이력 데이터를 참고해서 "
-    "retrieve_context 도구로 관련 NCS 기준 문서를 검색해.\n"
-    "검색이 완료되면 반드시 handoff_to_feedback 도구를 호출해서 피드백 생성 단계로 전환해."
+    "직전 대화에서 직원 이력이 조회되었다.\n"
+    "먼저 사용자에게 어떤 NCS 항목 또는 키워드를 기준으로 검색할지 물어봐.\n"
+    "사용자가 답변하면:\n"
+    "1. retrieve_context 도구로 관련 NCS 기준 문서를 검색해\n"
+    "2. 검색 결과를 사용자에게 요약해서 보여줘\n"
+    "3. complete_rag_step 도구를 호출해서 다음 단계로 전환해\n"
+    "절대로 직접 피드백을 생성하지 마."
 )
 
 FEEDBACK_STEP_PROMPT = (
     "너는 NCS 직원 관리 피드백 전문가야.\n"
-    "이전 대화에서 수집된 직원 이력 데이터와 NCS 문서 검색 결과를 바탕으로 "
-    "종합적이고 건설적인 피드백을 마크다운 형식으로 작성해줘.\n"
+    "이전 대화에서 수집된 직원 이력 데이터와 NCS 문서 검색 결과를 확인했다.\n"
+    "먼저 사용자에게 어떤 관점으로 피드백을 작성할지 물어봐 "
+    "(예: 강점 중심 / 개선점 중심 / 균형 있게).\n"
+    "사용자가 방향을 제시하면 마크다운 형식으로 종합 피드백을 작성해줘.\n"
     "직원 이력과 NCS 기준을 항목별로 비교하고 구체적인 개선 방향을 제시해줘.\n"
     "불확실한 내용은 반드시 명시해."
 )
@@ -117,11 +126,11 @@ class NCSHandoffAgent(BaseAgent):
         step_config = {
             "sql": {
                 "prompt": SQL_STEP_PROMPT,
-                "tools": self._sql_tools + [handoff_to_rag],
+                "tools": self._sql_tools + [complete_sql_step],
             },
             "rag": {
                 "prompt": RAG_STEP_PROMPT,
-                "tools": self._rag_tools + [handoff_to_feedback],
+                "tools": self._rag_tools + [complete_rag_step],
             },
             "feedback": {
                 "prompt": FEEDBACK_STEP_PROMPT,
@@ -143,7 +152,7 @@ class NCSHandoffAgent(BaseAgent):
             )
             return await handler(request)
 
-        all_tools = self._sql_tools + self._rag_tools + [handoff_to_rag, handoff_to_feedback]
+        all_tools = self._sql_tools + self._rag_tools + [complete_sql_step, complete_rag_step]
 
         self.agent = _lc_agents.create_agent(
             self.model,
