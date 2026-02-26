@@ -60,8 +60,8 @@ export async function deleteDocument(docId) {
   return true
 }
 
-export async function sendFeedbackChat(query, threadId = null) {
-  const body = { query }
+export async function sendFeedbackChat(query, threadId = null, version = 'v1') {
+  const body = { query, version }
   if (threadId) body.threadId = threadId
 
   const res = await fetch(`${BASE_URL}/api/chat`, {
