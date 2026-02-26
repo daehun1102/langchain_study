@@ -3,12 +3,13 @@ import { ref, onMounted } from 'vue'
 import FilterPanel from './components/FilterPanel.vue'
 import ChatView from './components/ChatView.vue'
 import DocumentView from './components/DocumentView.vue'
+import FeedbackView from './components/FeedbackView.vue'
 import { healthCheck, fetchCategories } from './api/ncsApi.js'
 
 const isConnected = ref(false)
 const sidebarOpen = ref(true)
 const categories = ref({})
-const activeTab = ref('chat')   // 'chat' | 'documents'
+const activeTab = ref('chat')   // 'chat' | 'documents' | 'feedback'
 
 onMounted(async () => {
   isConnected.value = await healthCheck()
@@ -51,6 +52,12 @@ function toggleSidebar() {
       >
         문서 관리
       </button>
+      <button
+        :class="['tab-btn', { active: activeTab === 'feedback' }]"
+        @click="activeTab = 'feedback'"
+      >
+        NCS 피드백
+      </button>
     </nav>
 
     <!-- 탭 콘텐츠 -->
@@ -77,6 +84,13 @@ function toggleSidebar() {
       <template v-else-if="activeTab === 'documents'">
         <main class="main-area full-width">
           <DocumentView :categories="categories" />
+        </main>
+      </template>
+
+      <!-- NCS 피드백 탭 -->
+      <template v-else-if="activeTab === 'feedback'">
+        <main class="main-area full-width">
+          <FeedbackView />
         </main>
       </template>
     </div>
