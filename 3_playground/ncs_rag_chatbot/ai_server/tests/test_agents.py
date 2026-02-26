@@ -116,8 +116,8 @@ async def test_ncs_handoff_agent_has_three_step_workflow():
     mock_rag_tool = MagicMock()
     mock_rag_tool.name = "retrieve_context"
 
-    with patch("langchain.agents.create_agent") as mock_create, \
-         patch("langchain.chat_models.init_chat_model"):
+    with patch("agents.v2.supervisor.create_agent") as mock_create, \
+         patch("agents.v2.supervisor.init_chat_model"):
         mock_create.return_value = MagicMock()
         agent = NCSHandoffAgent(
             rag_tools=[mock_rag_tool],
@@ -137,8 +137,8 @@ async def test_ncs_handoff_agent_create_agent_rejects_tools_override():
     """create_agent(tools=...)를 호출하면 ValueError가 발생한다."""
     from agents.v2.supervisor import NCSHandoffAgent
 
-    with patch("langchain.agents.create_agent"), \
-         patch("langchain.chat_models.init_chat_model"):
+    with patch("agents.v2.supervisor.create_agent"), \
+         patch("agents.v2.supervisor.init_chat_model"):
         agent = NCSHandoffAgent(rag_tools=[], sql_tools=[])
         with pytest.raises(ValueError, match="external tool override"):
             agent.create_agent(tools=[MagicMock()])
@@ -149,8 +149,8 @@ async def test_ncs_handoff_agent_uses_inmemory_checkpointer():
     from agents.v2.supervisor import NCSHandoffAgent
     from langgraph.checkpoint.memory import InMemorySaver
 
-    with patch("langchain.agents.create_agent") as mock_create, \
-         patch("langchain.chat_models.init_chat_model"):
+    with patch("agents.v2.supervisor.create_agent") as mock_create, \
+         patch("agents.v2.supervisor.init_chat_model"):
         mock_create.return_value = MagicMock()
         agent = NCSHandoffAgent(rag_tools=[], sql_tools=[])
         agent.create_agent()
@@ -173,8 +173,8 @@ async def test_ncs_handoff_agent_run_returns_message():
     """NCSHandoffAgent.run()은 마지막 메시지를 반환한다."""
     from agents.v2.supervisor import NCSHandoffAgent
 
-    with patch("langchain.agents.create_agent") as mock_create, \
-         patch("langchain.chat_models.init_chat_model"):
+    with patch("agents.v2.supervisor.create_agent") as mock_create, \
+         patch("agents.v2.supervisor.init_chat_model"):
 
         mock_agent_instance = MagicMock()
         mock_agent_instance.astream.return_value = _async_iter([

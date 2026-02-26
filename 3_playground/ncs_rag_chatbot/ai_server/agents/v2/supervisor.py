@@ -9,9 +9,8 @@ LangChain handoffs 패턴 적용:
 from typing import Literal, Callable
 from typing_extensions import NotRequired
 
-import langchain.agents as _lc_agents
-import langchain.chat_models as _lc_chat
-from langchain.agents import AgentState
+from langchain.agents import AgentState, create_agent
+from langchain.chat_models import init_chat_model
 from langchain.agents.middleware import wrap_model_call, ModelRequest, ModelResponse
 from langchain.tools import tool, ToolRuntime
 from langchain.messages import ToolMessage
@@ -107,10 +106,14 @@ class NCSHandoffAgent(BaseAgent):
 
     단일 LangGraph 에이전트 인스턴스가 current_step 상태에 따라
     sql → rag → feedback 3단계 순차 워크플로우를 수행한다.
+
+    Note:
+        각 단계(RAG, Feedback)는 사용자 입력을 기다리는 multi-turn 구조다.
+        run() 호출 시 반드시 동일한 thread_id를 유지해야 대화 컨텍스트가 보존된다.
     """
 
     def __init__(self, rag_tools: list, sql_tools: list, model_name: str = None):
-        self.model = _lc_chat.init_chat_model(model_name or settings.model_name)
+        self.model = init_chat_model(model_name or settings.model_name)
         self._rag_tools = rag_tools
         self._sql_tools = sql_tools
         self.checkpointer = InMemorySaver()
@@ -154,7 +157,7 @@ class NCSHandoffAgent(BaseAgent):
 
         all_tools = self._sql_tools + self._rag_tools + [complete_sql_step, complete_rag_step]
 
-        self.agent = _lc_agents.create_agent(
+        self.agent = create_agent(
             self.model,
             tools=all_tools,
             state_schema=NCSAgentState,
