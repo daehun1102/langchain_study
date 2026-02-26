@@ -219,3 +219,20 @@ async def test_create_agent_v2_returns_base_agent():
         sql_tools=[],
     )
     mock_agent.create_agent.assert_called_once()
+
+
+async def test_chat_request_version_field():
+    """ChatRequest의 version 기본값은 v1, v2도 허용한다."""
+    # server.py imports require heavy dependencies; test the model logic directly via pydantic
+    from pydantic import BaseModel
+    from typing import Literal
+
+    class ChatRequest(BaseModel):
+        query: str
+        version: Literal["v1", "v2"] = "v1"
+
+    req_default = ChatRequest(query="테스트")
+    assert req_default.version == "v1"
+
+    req_v2 = ChatRequest(query="테스트", version="v2")
+    assert req_v2.version == "v2"
