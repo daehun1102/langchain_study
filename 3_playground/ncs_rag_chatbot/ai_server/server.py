@@ -16,7 +16,7 @@ server.py — Python FastAPI AI 서버 (내부 전용)
 import logging
 import traceback
 from contextlib import asynccontextmanager
-from typing import List, Optional
+from typing import List, Literal, Optional
 
 from infra.tracing import setup_tracing
 setup_tracing()
@@ -83,7 +83,7 @@ class ChatRequest(BaseModel):
     query: str
     doc_ids: Optional[List[str]] = None
     thread_id: str = "default"
-    version: str = "v1"          # ← 추가
+    version: Literal["v1", "v2"] = "v1"
 
 
 class SourceInfo(BaseModel):
@@ -134,6 +134,7 @@ async def ingest(req: IngestRequest):
 
 @app.post("/internal/chat", response_model=ChatResponse)
 async def chat(req: ChatRequest):
+    """Spring에서 호출. Agent를 통해 AI 응답 생성. version 필드로 v1/v2 agent를 선택한다."""
     try:
         doc_ids = req.doc_ids or []
         config = {
@@ -143,6 +144,8 @@ async def chat(req: ChatRequest):
             }
         }
         selected_agent = agent_v2 if req.version == "v2" else agent_v1
+        if selected_agent is None:
+            raise HTTPException(status_code=503, detail=f"Agent {req.version} is not available")
         last_message = await selected_agent.run(req.query, config=config)
         answer = last_message.content if last_message else "응답을 생성할 수 없습니다."
         sources = await _collect_sources(req.query, doc_ids)
