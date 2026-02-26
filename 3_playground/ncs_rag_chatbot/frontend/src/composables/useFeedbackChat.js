@@ -1,7 +1,7 @@
 import { ref, watch, nextTick } from 'vue'
 import { sendFeedbackChat } from '../api/ncsApi.js'
 
-export function useFeedbackChat() {
+export function useFeedbackChat(version = 'v1') {
   const messages = ref([])
   const isLoading = ref(false)
   const scrollContainer = ref(null)
@@ -35,7 +35,7 @@ export function useFeedbackChat() {
     isLoading.value = true
 
     try {
-      const result = await sendFeedbackChat(text, threadId.value)
+      const result = await sendFeedbackChat(text, threadId.value, version)
 
       messages.value.push({
         role: 'assistant',
