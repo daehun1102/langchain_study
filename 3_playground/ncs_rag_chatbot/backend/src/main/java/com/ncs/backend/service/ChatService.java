@@ -27,7 +27,8 @@ public class ChatService {
 
         // 2. Python AI 서버로 query + doc_ids + threadId 전달
         String threadId = req.getThreadId() != null ? req.getThreadId() : "default";
-        InternalChatRequest internalReq = new InternalChatRequest(req.getQuery(), docIds, threadId);
+        String version = req.getVersion() != null ? req.getVersion() : "v1";
+        InternalChatRequest internalReq = new InternalChatRequest(req.getQuery(), docIds, threadId, version);
         ChatResponse response = pythonRestClient.post()
                 .uri("/internal/chat")
                 .body(internalReq)

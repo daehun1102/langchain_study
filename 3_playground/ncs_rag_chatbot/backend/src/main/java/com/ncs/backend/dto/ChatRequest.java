@@ -8,4 +8,5 @@ public class ChatRequest {
     private String mainCategory;
     private String subCategory;
     private String threadId;    // nullable — 없으면 ChatService에서 "default" 사용
+    private String version = "v1";
 }

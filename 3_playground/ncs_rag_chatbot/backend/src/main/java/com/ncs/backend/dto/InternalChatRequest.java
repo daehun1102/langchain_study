@@ -15,4 +15,7 @@ public class InternalChatRequest {
 
     @JsonProperty("thread_id")
     private String threadId;
+
+    @JsonProperty("version")
+    private String version;
 }
