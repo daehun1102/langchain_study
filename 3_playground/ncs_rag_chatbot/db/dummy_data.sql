@@ -1,9 +1,10 @@
 -- db/dummy_data.sql
--- Oracle LMS DB 더미 데이터 — 테스트 및 개발 환경용
--- 재실행 안전: DELETE 후 INSERT
+-- Oracle LMS DB 더미 데이터 — NCS AI 채점 시나리오
+-- DBeaver Oracle 드라이버에서 전체 선택 후 Alt+X 로 실행
+-- schema.sql 실행 후 사용. 기존 데이터 삭제 후 재삽입하므로 반복 실행 가능
 
 -- ============================================================
--- 기존 데이터 삭제 (FK 순서 역순)
+-- 기존 데이터 삭제 (FK 역순)
 -- ============================================================
 DELETE FROM TB_GRADING_RESULT;
 DELETE FROM TB_ASSIGNMENT_SUBMISSION;
@@ -14,52 +15,55 @@ DELETE FROM TB_EMPLOYEE;
 DROP SEQUENCE SEQ_HISTORY_ID;
 DROP SEQUENCE SEQ_SUBMISSION_ID;
 DROP SEQUENCE SEQ_RESULT_ID;
-CREATE SEQUENCE SEQ_HISTORY_ID   START WITH 1 INCREMENT BY 1 NOCACHE;
+
+CREATE SEQUENCE SEQ_HISTORY_ID    START WITH 1 INCREMENT BY 1 NOCACHE;
 CREATE SEQUENCE SEQ_SUBMISSION_ID START WITH 1 INCREMENT BY 1 NOCACHE;
-CREATE SEQUENCE SEQ_RESULT_ID    START WITH 1 INCREMENT BY 1 NOCACHE;
+CREATE SEQUENCE SEQ_RESULT_ID     START WITH 1 INCREMENT BY 1 NOCACHE;
 
 -- ============================================================
 -- TB_EMPLOYEE (10명)
 -- ============================================================
-INSERT INTO TB_EMPLOYEE VALUES ('EMP001', '홍길동', '소프트웨어개발팀', '선임개발자',   DATE '2020-03-02', 'hong@company.com',  SYSDATE);
-INSERT INTO TB_EMPLOYEE VALUES ('EMP002', '김철수', '소프트웨어개발팀', '주임개발자',   DATE '2021-07-01', 'kim@company.com',   SYSDATE);
-INSERT INTO TB_EMPLOYEE VALUES ('EMP003', '이영희', 'QA팀',           '선임QA',      DATE '2019-01-15', 'lee@company.com',   SYSDATE);
-INSERT INTO TB_EMPLOYEE VALUES ('EMP004', '박민수', '데이터분석팀',    '주임분석가',   DATE '2022-04-11', 'park@company.com',  SYSDATE);
-INSERT INTO TB_EMPLOYEE VALUES ('EMP005', '최지연', '인프라팀',        '클라우드엔지니어', DATE '2020-09-07', 'choi@company.com', SYSDATE);
-INSERT INTO TB_EMPLOYEE VALUES ('EMP006', '정수현', '소프트웨어개발팀', '사원',        DATE '2024-02-19', 'jung@company.com',  SYSDATE);
-INSERT INTO TB_EMPLOYEE VALUES ('EMP007', '강동원', 'QA팀',           '주임QA',      DATE '2021-11-03', 'kang@company.com',  SYSDATE);
-INSERT INTO TB_EMPLOYEE VALUES ('EMP008', '윤서연', '데이터분석팀',    '선임분석가',   DATE '2018-06-25', 'yoon@company.com',  SYSDATE);
-INSERT INTO TB_EMPLOYEE VALUES ('EMP009', '조현우', '인프라팀',        '사원',        DATE '2023-08-14', 'cho@company.com',   SYSDATE);
-INSERT INTO TB_EMPLOYEE VALUES ('EMP010', '한미래', 'HR팀',           '채점관리자',   DATE '2017-03-20', 'han@company.com',   SYSDATE);
+INSERT INTO TB_EMPLOYEE VALUES ('EMP001', '홍길동', '소프트웨어개발팀', '선임개발자',      DATE '2020-03-02', 'hong@company.com',  SYSDATE);
+INSERT INTO TB_EMPLOYEE VALUES ('EMP002', '김철수', '소프트웨어개발팀', '주임개발자',      DATE '2021-07-01', 'kim@company.com',   SYSDATE);
+INSERT INTO TB_EMPLOYEE VALUES ('EMP003', '이영희', 'QA팀',            '선임QA',          DATE '2019-01-15', 'lee@company.com',   SYSDATE);
+INSERT INTO TB_EMPLOYEE VALUES ('EMP004', '박민수', '데이터분석팀',     '주임분석가',      DATE '2022-04-11', 'park@company.com',  SYSDATE);
+INSERT INTO TB_EMPLOYEE VALUES ('EMP005', '최지연', '인프라팀',         '클라우드엔지니어', DATE '2020-09-07', 'choi@company.com',  SYSDATE);
+INSERT INTO TB_EMPLOYEE VALUES ('EMP006', '정수현', '소프트웨어개발팀', '사원',            DATE '2024-02-19', 'jung@company.com',  SYSDATE);
+INSERT INTO TB_EMPLOYEE VALUES ('EMP007', '강동원', 'QA팀',            '주임QA',          DATE '2021-11-03', 'kang@company.com',  SYSDATE);
+INSERT INTO TB_EMPLOYEE VALUES ('EMP008', '윤서연', '데이터분석팀',     '선임분석가',      DATE '2018-06-25', 'yoon@company.com',  SYSDATE);
+INSERT INTO TB_EMPLOYEE VALUES ('EMP009', '조현우', '인프라팀',         '사원',            DATE '2023-08-14', 'cho@company.com',   SYSDATE);
+INSERT INTO TB_EMPLOYEE VALUES ('EMP010', '한미래', 'HR팀',             '채점관리자',      DATE '2017-03-20', 'han@company.com',   SYSDATE);
 
 -- ============================================================
 -- TB_EDUCATION_HISTORY
 -- ============================================================
--- EMP001 홍길동
 INSERT INTO TB_EDUCATION_HISTORY VALUES (SEQ_HISTORY_ID.NEXTVAL, 'EMP001', 'Python 기반 소프트웨어 개발', 'SW-20-01', DATE '2023-03-01', DATE '2023-03-31', '완료',   95.0, SYSDATE);
 INSERT INTO TB_EDUCATION_HISTORY VALUES (SEQ_HISTORY_ID.NEXTVAL, 'EMP001', 'Java 엔터프라이즈 개발',     'SW-20-02', DATE '2023-06-01', DATE '2023-06-30', '완료',   88.5, SYSDATE);
-INSERT INTO TB_EDUCATION_HISTORY VALUES (SEQ_HISTORY_ID.NEXTVAL, 'EMP001', '클라우드 서비스 운용',       'IT-CL-01', DATE '2024-01-10', NULL,             '진행중', NULL, SYSDATE);
--- EMP002 김철수
+INSERT INTO TB_EDUCATION_HISTORY VALUES (SEQ_HISTORY_ID.NEXTVAL, 'EMP001', '클라우드 서비스 운용',       'IT-CL-01', DATE '2024-01-10', NULL,             '진행중', NULL,  SYSDATE);
 INSERT INTO TB_EDUCATION_HISTORY VALUES (SEQ_HISTORY_ID.NEXTVAL, 'EMP002', 'Python 기반 소프트웨어 개발', 'SW-20-01', DATE '2023-03-01', DATE '2023-03-31', '완료',   78.0, SYSDATE);
 INSERT INTO TB_EDUCATION_HISTORY VALUES (SEQ_HISTORY_ID.NEXTVAL, 'EMP002', '데이터베이스 설계 및 구축',  'DB-15-01', DATE '2023-09-01', DATE '2023-09-30', '완료',   82.0, SYSDATE);
-INSERT INTO TB_EDUCATION_HISTORY VALUES (SEQ_HISTORY_ID.NEXTVAL, 'EMP002', 'UI/UX 설계',               'UX-10-01', DATE '2024-02-01', NULL,             '미이수', NULL, SYSDATE);
--- EMP003 이영희
+INSERT INTO TB_EDUCATION_HISTORY VALUES (SEQ_HISTORY_ID.NEXTVAL, 'EMP002', 'UI/UX 설계',               'UX-10-01', DATE '2024-02-01', NULL,             '미이수', NULL,  SYSDATE);
 INSERT INTO TB_EDUCATION_HISTORY VALUES (SEQ_HISTORY_ID.NEXTVAL, 'EMP003', '소프트웨어 테스트 설계',    'QA-20-01', DATE '2022-05-01', DATE '2022-05-31', '완료',   92.0, SYSDATE);
 INSERT INTO TB_EDUCATION_HISTORY VALUES (SEQ_HISTORY_ID.NEXTVAL, 'EMP003', '테스트 자동화 구현',        'QA-20-02', DATE '2023-10-01', DATE '2023-10-31', '완료',   90.5, SYSDATE);
--- EMP004 박민수
 INSERT INTO TB_EDUCATION_HISTORY VALUES (SEQ_HISTORY_ID.NEXTVAL, 'EMP004', '빅데이터 분석',             'DA-25-01', DATE '2023-04-01', DATE '2023-04-30', '완료',   85.0, SYSDATE);
-INSERT INTO TB_EDUCATION_HISTORY VALUES (SEQ_HISTORY_ID.NEXTVAL, 'EMP004', '머신러닝 모델 개발',        'DA-25-02', DATE '2024-01-01', NULL,             '진행중', NULL, SYSDATE);
--- EMP006 정수현 (신입)
-INSERT INTO TB_EDUCATION_HISTORY VALUES (SEQ_HISTORY_ID.NEXTVAL, 'EMP006', 'Python 기반 소프트웨어 개발', 'SW-20-01', DATE '2024-03-01', NULL,             '진행중', NULL, SYSDATE);
+INSERT INTO TB_EDUCATION_HISTORY VALUES (SEQ_HISTORY_ID.NEXTVAL, 'EMP004', '머신러닝 모델 개발',        'DA-25-02', DATE '2024-01-01', NULL,             '진행중', NULL,  SYSDATE);
+INSERT INTO TB_EDUCATION_HISTORY VALUES (SEQ_HISTORY_ID.NEXTVAL, 'EMP006', 'Python 기반 소프트웨어 개발', 'SW-20-01', DATE '2024-03-01', NULL,             '진행중', NULL,  SYSDATE);
 
 -- ============================================================
--- TB_ASSIGNMENT_SUBMISSION (과제 본문 텍스트)
+-- TB_ASSIGNMENT_SUBMISSION
+-- SUBMISSION_ID 는 시퀀스 순서대로 1~6 이 할당됨
 -- ============================================================
 
--- EMP001 홍길동 / Python 과정 / REST API 설계 및 구현 (우수 제출)
+-- SUBMISSION_ID = 1 : EMP001 / Python과정 / REST API (우수 제출)
 INSERT INTO TB_ASSIGNMENT_SUBMISSION (SUBMISSION_ID, EMPLOYEE_ID, COURSE_NAME, ASSIGNMENT_NAME, SUBMIT_DATE, STATUS, CONTENT, CREATED_AT)
-VALUES (SEQ_SUBMISSION_ID.NEXTVAL, 'EMP001', 'Python 기반 소프트웨어 개발', 'REST API 설계 및 구현', DATE '2023-03-25', '제출',
-'[과제] REST API 설계 및 구현
+VALUES (
+    SEQ_SUBMISSION_ID.NEXTVAL,
+    'EMP001',
+    'Python 기반 소프트웨어 개발',
+    'REST API 설계 및 구현',
+    DATE '2023-03-25',
+    '제출',
+    '[과제] REST API 설계 및 구현
 
 1. 설계 개요
 FastAPI 프레임워크를 활용하여 직원 교육 이력 조회용 RESTful API를 설계 및 구현하였습니다.
@@ -75,7 +79,6 @@ HTTP 메서드별 역할을 명확히 분리하고, 상태 코드를 표준에 �
 from fastapi import FastAPI, HTTPException, status
 from pydantic import BaseModel
 from typing import Optional
-import uvicorn
 
 app = FastAPI(title="직원 이력 API", version="1.0.0")
 
@@ -114,12 +117,19 @@ async def create_employee(emp: EmployeeCreate):
 6. NCS 능력단위 적용 사항
 SW개발 능력단위 "서버프로그램 구현" 기준에 따라
 인터페이스 설계, 예외 처리, 테스트 케이스 작성을 모두 수행하였습니다.',
-SYSDATE);
+    SYSDATE
+);
 
--- EMP001 홍길동 / Java 과정 / Spring Boot 마이크로서비스 구축 (우수 제출)
+-- SUBMISSION_ID = 2 : EMP001 / Java과정 / Spring Boot MSA (우수 제출)
 INSERT INTO TB_ASSIGNMENT_SUBMISSION (SUBMISSION_ID, EMPLOYEE_ID, COURSE_NAME, ASSIGNMENT_NAME, SUBMIT_DATE, STATUS, CONTENT, CREATED_AT)
-VALUES (SEQ_SUBMISSION_ID.NEXTVAL, 'EMP001', 'Java 엔터프라이즈 개발', 'Spring Boot 마이크로서비스 구축', DATE '2023-06-28', '제출',
-'[과제] Spring Boot 마이크로서비스 구축
+VALUES (
+    SEQ_SUBMISSION_ID.NEXTVAL,
+    'EMP001',
+    'Java 엔터프라이즈 개발',
+    'Spring Boot 마이크로서비스 구축',
+    DATE '2023-06-28',
+    '제출',
+    '[과제] Spring Boot 마이크로서비스 구축
 
 1. 아키텍처 설계
 교육 관리 시스템을 3개의 독립 마이크로서비스로 분리하였습니다.
@@ -170,12 +180,19 @@ cascade failure 가능성이 있습니다. 향후 Resilience4j 적용 예정입�
 SW개발 능력단위 "통합 구현" 기준에 따라
 인터페이스 설계 및 구현을 완료하였으나,
 서비스 간 오류 처리 부분은 보완이 필요합니다.',
-SYSDATE);
+    SYSDATE
+);
 
--- EMP002 김철수 / Python 과정 / REST API 설계 및 구현 (보통 수준 제출)
+-- SUBMISSION_ID = 3 : EMP002 / Python과정 / REST API (보통 수준)
 INSERT INTO TB_ASSIGNMENT_SUBMISSION (SUBMISSION_ID, EMPLOYEE_ID, COURSE_NAME, ASSIGNMENT_NAME, SUBMIT_DATE, STATUS, CONTENT, CREATED_AT)
-VALUES (SEQ_SUBMISSION_ID.NEXTVAL, 'EMP002', 'Python 기반 소프트웨어 개발', 'REST API 설계 및 구현', DATE '2023-03-29', '제출',
-'[과제] REST API 설계 및 구현
+VALUES (
+    SEQ_SUBMISSION_ID.NEXTVAL,
+    'EMP002',
+    'Python 기반 소프트웨어 개발',
+    'REST API 설계 및 구현',
+    DATE '2023-03-29',
+    '제출',
+    '[과제] REST API 설계 및 구현
 
 1. 구현 내용
 Flask를 사용하여 간단한 직원 조회 API를 구현하였습니다.
@@ -214,16 +231,23 @@ if __name__ == "__main__":
 4. NCS 적용 사항
 기본적인 HTTP 메서드 활용과 상태 코드 반환은 구현하였으나
 보안 및 데이터 영속성 부분이 NCS SW개발 기준에 미달합니다.',
-SYSDATE);
+    SYSDATE
+);
 
--- EMP002 김철수 / UI/UX 설계 / UI 프로토타입 제작 (미제출)
+-- SUBMISSION_ID = 4 : EMP002 / UI/UX / UI 프로토타입 (미제출)
 INSERT INTO TB_ASSIGNMENT_SUBMISSION (SUBMISSION_ID, EMPLOYEE_ID, COURSE_NAME, ASSIGNMENT_NAME, SUBMIT_DATE, STATUS, CONTENT, CREATED_AT)
 VALUES (SEQ_SUBMISSION_ID.NEXTVAL, 'EMP002', 'UI/UX 설계', 'UI 프로토타입 제작', NULL, '미제출', NULL, SYSDATE);
 
--- EMP003 이영희 / 소프트웨어 테스트 설계 / 테스트 케이스 시나리오 작성 (우수 제출)
+-- SUBMISSION_ID = 5 : EMP003 / 테스트 설계 / 테스트 케이스 (우수 제출)
 INSERT INTO TB_ASSIGNMENT_SUBMISSION (SUBMISSION_ID, EMPLOYEE_ID, COURSE_NAME, ASSIGNMENT_NAME, SUBMIT_DATE, STATUS, CONTENT, CREATED_AT)
-VALUES (SEQ_SUBMISSION_ID.NEXTVAL, 'EMP003', '소프트웨어 테스트 설계', '테스트 케이스 시나리오 작성', DATE '2022-05-28', '제출',
-'[과제] 테스트 케이스 시나리오 작성
+VALUES (
+    SEQ_SUBMISSION_ID.NEXTVAL,
+    'EMP003',
+    '소프트웨어 테스트 설계',
+    '테스트 케이스 시나리오 작성',
+    DATE '2022-05-28',
+    '제출',
+    '[과제] 테스트 케이스 시나리오 작성
 
 1. 테스트 대상
 직원 교육 이력 조회 API (GET /api/v1/employees/{id}/history)
@@ -231,58 +255,65 @@ VALUES (SEQ_SUBMISSION_ID.NEXTVAL, 'EMP003', '소프트웨어 테스트 설계',
 2. 테스트 케이스 목록
 
 [TC-001] 정상 조회 — 유효한 사번으로 이력 조회
-  - 입력: employee_id = "EMP001"
-  - 기대 결과: 200 OK, 교육 이력 목록 반환
-  - 결과: PASS
+  입력: employee_id = "EMP001"
+  기대 결과: 200 OK, 교육 이력 목록 반환
+  결과: PASS
 
 [TC-002] 존재하지 않는 사번 조회
-  - 입력: employee_id = "EMP999"
-  - 기대 결과: 404 Not Found, 오류 메시지 반환
-  - 결과: PASS
+  입력: employee_id = "EMP999"
+  기대 결과: 404 Not Found, 오류 메시지 반환
+  결과: PASS
 
 [TC-003] 빈 사번 입력
-  - 입력: employee_id = ""
-  - 기대 결과: 400 Bad Request
-  - 결과: PASS
+  입력: employee_id = ""
+  기대 결과: 400 Bad Request
+  결과: PASS
 
 [TC-004] 교육 이력 없는 직원 조회
-  - 입력: employee_id = "EMP010"
-  - 기대 결과: 200 OK, 빈 배열 반환
-  - 결과: PASS
+  입력: employee_id = "EMP010"
+  기대 결과: 200 OK, 빈 배열 반환
+  결과: PASS
 
-[TC-005] 특수문자 포함 사번 (SQL Injection 시도)
-  - 입력: employee_id = "EMP001'' OR 1=1 --"
-  - 기대 결과: 400 Bad Request 또는 404 Not Found
-  - 결과: PASS (Prepared Statement로 방어됨)
+[TC-005] SQL Injection 시도
+  입력: employee_id = "EMP001'' OR 1=1 --"
+  기대 결과: 400 Bad Request 또는 404 Not Found
+  결과: PASS (Prepared Statement로 방어됨)
 
 [TC-006] 이름으로 조회 (한글)
-  - 입력: identifier = "홍길동"
-  - 기대 결과: 200 OK, 해당 직원 이력 반환
-  - 결과: PASS
+  입력: identifier = "홍길동"
+  기대 결과: 200 OK, 해당 직원 이력 반환
+  결과: PASS
 
-[TC-007] 경계값 — 가장 오래된 이력 포함 여부
-  - 입력: employee_id = "EMP001"
-  - 기대 결과: 전체 이력 반환 (날짜순 정렬 확인)
-  - 결과: PASS
+[TC-007] 경계값 — 전체 이력 날짜 정렬 확인
+  입력: employee_id = "EMP001"
+  기대 결과: 전체 이력 반환 (최신순 정렬 확인)
+  결과: PASS
 
 [TC-008] 동시 다수 요청 (100 concurrent)
-  - 기대 결과: 모든 요청 200 OK, 응답시간 500ms 이내
-  - 결과: PASS (평균 180ms)
+  기대 결과: 모든 요청 200 OK, 응답시간 500ms 이내
+  결과: PASS (평균 180ms)
 
 3. 결함 발견 사항
-- 이름 중복 시 첫 번째 직원만 반환하는 동작 확인
-  → 중복 이름 처리 정책 명문화 필요 (결함 등록: BUG-2022-011)
+이름 중복 시 첫 번째 직원만 반환하는 동작 확인
+→ 중복 이름 처리 정책 명문화 필요 (결함 등록: BUG-2022-011)
 
 4. NCS 능력단위 적용 사항
 QA 능력단위 "테스트 케이스 설계" 기준에 따라
 동등 분할, 경계값 분석, 오류 추측 기법을 모두 적용하였습니다.
 경계값 테스트와 보안 테스트 케이스를 추가로 보강할 예정입니다.',
-SYSDATE);
+    SYSDATE
+);
 
--- EMP003 이영희 / 테스트 자동화 구현 / Selenium 자동화 스크립트 (우수 제출)
+-- SUBMISSION_ID = 6 : EMP003 / 테스트 자동화 / Selenium (우수 제출)
 INSERT INTO TB_ASSIGNMENT_SUBMISSION (SUBMISSION_ID, EMPLOYEE_ID, COURSE_NAME, ASSIGNMENT_NAME, SUBMIT_DATE, STATUS, CONTENT, CREATED_AT)
-VALUES (SEQ_SUBMISSION_ID.NEXTVAL, 'EMP003', '테스트 자동화 구현', 'Selenium 자동화 스크립트', DATE '2023-10-29', '제출',
-'[과제] Selenium 자동화 스크립트 구현
+VALUES (
+    SEQ_SUBMISSION_ID.NEXTVAL,
+    'EMP003',
+    '테스트 자동화 구현',
+    'Selenium 자동화 스크립트',
+    DATE '2023-10-29',
+    '제출',
+    '[과제] Selenium 자동화 스크립트 구현
 
 1. 구현 개요
 교육 관리 시스템 웹 UI의 주요 기능을 Selenium WebDriver와
@@ -291,9 +322,9 @@ Page Object Model(POM) 패턴을 적용하여 자동화하였습니다.
 2. 디렉토리 구조
 tests/
   pages/
-    login_page.py      # 로그인 페이지 POM
-    employee_page.py   # 직원 조회 페이지 POM
-    history_page.py    # 이력 조회 페이지 POM
+    login_page.py
+    employee_page.py
+    history_page.py
   tests/
     test_login.py
     test_employee_search.py
@@ -301,7 +332,6 @@ tests/
   conftest.py
 
 3. Page Object 구현 예시
-# pages/employee_page.py
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -323,13 +353,9 @@ class EmployeePage:
 
     def get_result_rows(self):
         table = self.wait.until(EC.visibility_of_element_located(self.RESULT_TABLE))
-        return table.find_elements(By.TAG_NAME, "tr")[1:]  # 헤더 제외
+        return table.find_elements(By.TAG_NAME, "tr")[1:]
 
 4. 테스트 케이스
-# tests/test_employee_search.py
-import pytest
-from pages.employee_page import EmployeePage
-
 class TestEmployeeSearch:
     def test_search_by_employee_id(self, driver, base_url):
         driver.get(f"{base_url}/employees")
@@ -355,29 +381,31 @@ class TestEmployeeSearch:
 QA 능력단위 "테스트 자동화" 기준에 따라
 Page Object 패턴으로 유지보수성을 확보하였으며
 CI 파이프라인 통합까지 완료하였습니다.',
-SYSDATE);
+    SYSDATE
+);
 
--- EMP006 정수현 / Python 과정 / REST API 설계 및 구현 (미제출 — 신입)
+-- SUBMISSION_ID = 7 : EMP006 / Python과정 / REST API (미제출 — 신입)
 INSERT INTO TB_ASSIGNMENT_SUBMISSION (SUBMISSION_ID, EMPLOYEE_ID, COURSE_NAME, ASSIGNMENT_NAME, SUBMIT_DATE, STATUS, CONTENT, CREATED_AT)
 VALUES (SEQ_SUBMISSION_ID.NEXTVAL, 'EMP006', 'Python 기반 소프트웨어 개발', 'REST API 설계 및 구현', NULL, '미제출', NULL, SYSDATE);
 
 -- ============================================================
--- TB_GRADING_RESULT (AI 채점 결과)
--- GRADER_ID = 'EMP010' (채점관리자 한미래 — AI 채점 결과 등록 담당)
+-- TB_GRADING_RESULT
+-- GRADER_ID = EMP010 (채점관리자 한미래 — AI 채점 결과 등록 담당)
 -- ============================================================
 
--- EMP001 / REST API (SUBMISSION_ID=1)
+-- EMP001 / SUBMISSION_ID=1 / REST API
 INSERT INTO TB_GRADING_RESULT VALUES (
     SEQ_RESULT_ID.NEXTVAL, 1, 'EMP001', 'EMP010', 96.0, 'Y',
     'NCS SW개발 능력단위 "서버프로그램 구현" 기준 평가 결과:
 [우수] HTTP 메서드 및 상태 코드 표준 준수 (GET/POST/PUT/DELETE, 200/201/404/409)
 [우수] 예외 처리 전략이 구체적이며 NCS 요구사항을 충족함
 [우수] 단위/통합 테스트 모두 수행하여 품질 검증 완료
-[개선 권고] 인증(Authentication) 처리 방식 명시 필요 — JWT 또는 OAuth2 적용 권장
-종합: NCS 서버프로그램 구현 능력단위 수준 4 기준을 충족하며 우수한 구현입니다.',
-    DATE '2023-03-30', SYSDATE);
+[개선] 인증(Authentication) 처리 방식 명시 필요 — JWT 또는 OAuth2 적용 권장
+종합: NCS 서버프로그램 구현 수준 4 기준을 충족하는 우수한 구현입니다.',
+    DATE '2023-03-30', SYSDATE
+);
 
--- EMP001 / Spring Boot MSA (SUBMISSION_ID=2)
+-- EMP001 / SUBMISSION_ID=2 / Spring Boot MSA
 INSERT INTO TB_GRADING_RESULT VALUES (
     SEQ_RESULT_ID.NEXTVAL, 2, 'EMP001', 'EMP010', 87.0, 'Y',
     'NCS SW개발 능력단위 "통합 구현" 기준 평가 결과:
@@ -385,24 +413,26 @@ INSERT INTO TB_GRADING_RESULT VALUES (
 [우수] Spring Cloud OpenFeign을 활용한 서비스 간 통신 구현
 [미흡] Circuit Breaker 패턴 미적용 — cascade failure 위험 존재
 [미흡] 서비스 간 통신 오류 시나리오 테스트 미완성
-[개선 권고] Resilience4j 적용 및 오류 전파 차단 로직 구현 필요
+[개선] Resilience4j 적용 및 오류 전파 차단 로직 구현 필요
 종합: 기본 MSA 구조는 양호하나 장애 대응 설계 보완이 필요합니다.',
-    DATE '2023-06-30', SYSDATE);
+    DATE '2023-06-30', SYSDATE
+);
 
--- EMP002 / REST API (SUBMISSION_ID=3)
+-- EMP002 / SUBMISSION_ID=3 / REST API
 INSERT INTO TB_GRADING_RESULT VALUES (
     SEQ_RESULT_ID.NEXTVAL, 3, 'EMP002', 'EMP010', 72.0, 'Y',
     'NCS SW개발 능력단위 "서버프로그램 구현" 기준 평가 결과:
 [양호] 기본 CRUD HTTP 메서드 및 상태 코드 구현
 [미흡] 인증/인가(Authentication/Authorization) 처리 완전 누락
-[미흡] 입력값 유효성 검사 부재 — SQL Injection 등 보안 취약점 위험
+[미흡] 입력값 유효성 검사 부재 — 보안 취약점 위험
 [미흡] 데이터 영속성 미구현 (메모리 딕셔너리만 사용)
-[미흡] 에러 응답 형식이 비표준적 (NCS 인터페이스 설계 기준 불충족)
-[개선 권고] DB 연동, JWT 인증 구현, 표준 에러 응답 형식 적용 필요
+[미흡] 에러 응답 형식이 비표준적
+[개선] DB 연동, JWT 인증 구현, 표준 에러 응답 형식 적용 필요
 종합: 기본 기능은 구현되었으나 실무 수준의 보완이 필요합니다.',
-    DATE '2023-03-31', SYSDATE);
+    DATE '2023-03-31', SYSDATE
+);
 
--- EMP003 / 테스트 케이스 (SUBMISSION_ID=5)
+-- EMP003 / SUBMISSION_ID=5 / 테스트 케이스
 INSERT INTO TB_GRADING_RESULT VALUES (
     SEQ_RESULT_ID.NEXTVAL, 5, 'EMP003', 'EMP010', 93.0, 'Y',
     'NCS QA 능력단위 "테스트 케이스 설계" 기준 평가 결과:
@@ -410,12 +440,12 @@ INSERT INTO TB_GRADING_RESULT VALUES (
 [우수] 보안 테스트(SQL Injection) 케이스 포함 — NCS 요구 수준 초과
 [우수] 성능 테스트(100 concurrent) 케이스 포함
 [우수] 결함 발견 및 BUG 등록 절차 준수
-[개선 권고] 경계값 테스트 케이스 추가 확장 권장 (최대값, 최소값, 초과값)
-[개선 권고] 테스트 커버리지 측정 도구 활용 권장
-종합: NCS 테스트 케이스 설계 능력단위 수준 4 기준을 충족하는 우수한 작업입니다.',
-    DATE '2022-05-31', SYSDATE);
+[개선] 경계값 테스트 케이스 추가 확장 권장 (최대값, 최소값, 초과값)
+종합: NCS 테스트 케이스 설계 수준 4 기준을 충족하는 우수한 작업입니다.',
+    DATE '2022-05-31', SYSDATE
+);
 
--- EMP003 / Selenium (SUBMISSION_ID=6)
+-- EMP003 / SUBMISSION_ID=6 / Selenium
 INSERT INTO TB_GRADING_RESULT VALUES (
     SEQ_RESULT_ID.NEXTVAL, 6, 'EMP003', 'EMP010', 91.0, 'Y',
     'NCS QA 능력단위 "테스트 자동화" 기준 평가 결과:
@@ -423,9 +453,9 @@ INSERT INTO TB_GRADING_RESULT VALUES (
 [우수] CI/CD(GitHub Actions) 파이프라인 통합 완료
 [우수] 크로스 브라우저 테스트(Chrome, Firefox) 수행
 [우수] 18개 테스트 케이스 100% 통과
-[개선 권고] 테스트 실패 시 스크린샷 자동 캡처 기능 추가 권장
-[개선 권고] 테스트 실행 보고서(Allure Report 등) 생성 자동화 권장
-종합: NCS 테스트 자동화 능력단위 수준 4 기준을 충족하며 CI 연동까지 완성한 우수한 구현입니다.',
-    DATE '2023-10-31', SYSDATE);
+[개선] 테스트 실패 시 스크린샷 자동 캡처 기능 추가 권장
+종합: NCS 테스트 자동화 수준 4 기준을 충족하며 CI 연동까지 완성한 우수한 구현입니다.',
+    DATE '2023-10-31', SYSDATE
+);
 
 COMMIT;
