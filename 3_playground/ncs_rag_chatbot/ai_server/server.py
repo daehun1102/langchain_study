@@ -150,6 +150,8 @@ async def chat(req: ChatRequest):
         answer = last_message.content if last_message else "응답을 생성할 수 없습니다."
         sources = await _collect_sources(req.query, doc_ids)
         return ChatResponse(answer=answer, sources=sources)
+    except HTTPException:
+        raise
     except Exception:
         logger.error("[chat] 오류:\n%s", traceback.format_exc())
         raise HTTPException(status_code=500, detail="AI 응답 생성 실패")
