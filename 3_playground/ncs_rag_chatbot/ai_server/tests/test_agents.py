@@ -312,3 +312,13 @@ def test_ingest_signature_has_vsm_and_db_connection():
     assert "db_connection" in sig.parameters
     # db_connection should default to None (optional when vsm is provided)
     assert sig.parameters["db_connection"].default is None
+    assert sig.parameters["vsm"].default is None
+
+
+async def test_ingest_raises_when_both_vsm_and_db_connection_are_none():
+    """vsm과 db_connection 모두 None이면 ValueError가 발생한다."""
+    import pytest
+    from infra.ingest import ingest_single_document
+
+    with pytest.raises(ValueError, match="vsm 또는 db_connection"):
+        await ingest_single_document(doc_id="x", file_path="y")

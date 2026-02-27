@@ -6,6 +6,12 @@ ingest.py — PDF를 PGVector에 적재하는 모듈
 - ingest_single_document(): Spring에서 단일 PDF 처리 요청 시 호출
 """
 
+from __future__ import annotations
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from infra.vector_store import VectorStoreManager
+
 from infra.loader import DocumentLoader
 from infra.splitter import DocumentSplitter
 from infra.embeddings import EmbeddingModel
@@ -56,7 +62,7 @@ async def ingest_single_document(
     doc_id: str,
     file_path: str,
     db_connection: str | None = None,
-    vsm=None,  # VectorStoreManager | None — 서버에서 재사용 시 전달
+    vsm: VectorStoreManager | None = None,
 ) -> int:
     """단일 PDF를 PGVector에 적재한다.
 
