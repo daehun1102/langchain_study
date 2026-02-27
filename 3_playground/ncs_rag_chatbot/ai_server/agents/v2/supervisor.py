@@ -111,6 +111,7 @@ class NCSHandoffAgent(BaseAgent):
     """
 
     def __init__(self, rag_tools: list, sql_tools: list, model_name: str = None):
+        super().__init__()
         self.model = init_chat_model(model_name or settings.model_name)
         self._rag_tools = rag_tools
         self._sql_tools = sql_tools
@@ -162,15 +163,3 @@ class NCSHandoffAgent(BaseAgent):
             middleware=[apply_ncs_step_config],
             checkpointer=self.checkpointer,
         )
-
-    async def run(self, query: str, config: dict = None):
-        if not hasattr(self, "agent"):
-            raise ValueError("create_agent()를 먼저 호출하세요.")
-        last_message = None
-        async for event in self.agent.astream(
-            {"messages": [{"role": "user", "content": query}]},
-            config=config or {},
-            stream_mode="values",
-        ):
-            last_message = event["messages"][-1]
-        return last_message

@@ -236,3 +236,35 @@ async def test_chat_request_version_field():
 
     req_v2 = ChatRequest(query="테스트", version="v2")
     assert req_v2.version == "v2"
+
+
+async def test_base_agent_run_without_create_raises():
+    """BaseAgent.run()은 create_agent() 전에 호출 시 ValueError를 발생시킨다."""
+    import pytest
+    from agents.base import BaseAgent
+
+    class ConcreteAgent(BaseAgent):
+        def create_agent(self, tools=None): pass
+
+    agent = ConcreteAgent()
+    with pytest.raises(ValueError, match="create_agent"):
+        await agent.run("test query")
+
+
+async def test_base_agent_run_after_create_works():
+    """BaseAgent.run()은 create_agent() 후 self.agent.astream을 사용한다."""
+    from agents.base import BaseAgent
+    from unittest.mock import MagicMock
+
+    async def _fake_astream(*args, **kwargs):
+        yield {"messages": [MagicMock(content="ok")]}
+
+    class ConcreteAgent(BaseAgent):
+        def create_agent(self, tools=None):
+            self.agent = MagicMock()
+            self.agent.astream = _fake_astream
+
+    agent = ConcreteAgent()
+    agent.create_agent()
+    result = await agent.run("query")
+    assert result.content == "ok"
