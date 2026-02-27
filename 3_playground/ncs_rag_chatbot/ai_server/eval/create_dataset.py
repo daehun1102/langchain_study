@@ -18,6 +18,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import create_async_engine
 
 from eval.configs import DatasetConfig, DATASET_V1, DATASET_V2
+from infra.vector_store import TABLE_NAME
 
 logger = logging.getLogger(__name__)
 
@@ -25,8 +26,6 @@ _CONFIGS = {
     "v1": DATASET_V1,
     "v2": DATASET_V2,
 }
-
-TABLE_NAME = "ncs_vectors"
 
 
 # ── SQL 쿼리 ────────────────────────────────────────────────────

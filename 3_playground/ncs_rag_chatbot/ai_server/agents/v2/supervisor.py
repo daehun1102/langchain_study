@@ -110,7 +110,7 @@ class NCSHandoffAgent(BaseAgent):
         run() 호출 시 반드시 동일한 thread_id를 유지해야 대화 컨텍스트가 보존된다.
     """
 
-    def __init__(self, rag_tools: list, sql_tools: list, model_name: str = None):
+    def __init__(self, rag_tools: list, sql_tools: list, model_name: str | None = None):
         super().__init__()
         self.model = init_chat_model(model_name or settings.model_name)
         self._rag_tools = rag_tools

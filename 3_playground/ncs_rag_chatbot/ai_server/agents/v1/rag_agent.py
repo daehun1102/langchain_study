@@ -31,7 +31,7 @@ def _build_system_prompt() -> str:
 
 class ChatAgent(BaseAgent):
 
-    def __init__(self, model_name: str = None, system_prompt: str = None):
+    def __init__(self, model_name: str | None = None, system_prompt: str | None = None):
         super().__init__()
         self.model = init_chat_model(model_name or settings.model_name)
         self.checkpointer = InMemorySaver()
