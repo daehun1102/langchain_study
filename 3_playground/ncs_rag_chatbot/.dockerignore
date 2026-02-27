@@ -1,0 +1,17 @@
+# ai_server build context excludes
+ai_server/venv/
+ai_server/**/__pycache__/
+ai_server/**/*.pyc
+ai_server/**/*.pyo
+ai_server/tests/
+ai_server/eval/
+ai_server/scripts/
+ai_server/pytest.ini
+ai_server/.env
+
+# General
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+.env
+.git/
