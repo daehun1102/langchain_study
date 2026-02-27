@@ -4,7 +4,7 @@ WORKDIR /app
 
 RUN addgroup --system appgroup && adduser --system --ingroup appgroup appuser
 
-COPY --chown=appuser:appgroup requirements.txt .
+COPY --chown=appuser:appgroup ai_server/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY --chown=appuser:appgroup ai_server/ .
