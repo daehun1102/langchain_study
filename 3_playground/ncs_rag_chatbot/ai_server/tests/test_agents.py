@@ -240,7 +240,6 @@ async def test_chat_request_version_field():
 
 async def test_base_agent_run_without_create_raises():
     """BaseAgent.run()은 create_agent() 전에 호출 시 ValueError를 발생시킨다."""
-    import pytest
     from agents.base import BaseAgent
 
     class ConcreteAgent(BaseAgent):
@@ -254,7 +253,6 @@ async def test_base_agent_run_without_create_raises():
 async def test_base_agent_run_after_create_works():
     """BaseAgent.run()은 create_agent() 후 self.agent.astream을 사용한다."""
     from agents.base import BaseAgent
-    from unittest.mock import MagicMock
 
     async def _fake_astream(*args, **kwargs):
         yield {"messages": [MagicMock(content="ok")]}
@@ -268,3 +266,11 @@ async def test_base_agent_run_after_create_works():
     agent.create_agent()
     result = await agent.run("query")
     assert result.content == "ok"
+
+
+def test_chat_agent_model_name_default_is_none():
+    """ChatAgent의 model_name 기본값은 None (settings.model_name으로 폴백)."""
+    import inspect
+    from agents.v1.rag_agent import ChatAgent
+    sig = inspect.signature(ChatAgent.__init__)
+    assert sig.parameters["model_name"].default is None

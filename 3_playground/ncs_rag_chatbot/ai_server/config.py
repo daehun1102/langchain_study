@@ -11,7 +11,6 @@ class Settings(BaseSettings):
     redis_port: int = 6379
     model_name: str = "gpt-4o-mini"
     spring_api_version: str = "v1"
-    agent_version: str = "v1"
 
 
 settings = Settings()

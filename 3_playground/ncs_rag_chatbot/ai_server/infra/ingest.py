@@ -9,6 +9,7 @@ ingest.py — PDF를 PGVector에 적재하는 모듈
 from infra.loader import DocumentLoader
 from infra.splitter import DocumentSplitter
 from infra.embeddings import EmbeddingModel
+from infra.vector_store import TABLE_NAME
 from langchain_postgres import PGEngine, PGVectorStore, Column
 from sqlalchemy.ext.asyncio import create_async_engine
 from dotenv import load_dotenv
@@ -16,8 +17,6 @@ import asyncio
 import os
 
 load_dotenv()
-
-TABLE_NAME = "ncs_vectors"
 VECTOR_SIZE = 1536  # text-embedding-3-small
 
 # PGVector에는 doc_id(Oracle 참조)와 page만 저장

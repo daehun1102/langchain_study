@@ -20,6 +20,9 @@ _MISSING_MODULES = [
     "langchain_postgres",
     "dotenv",
     "langchain_upstage",
+    "langchain_community",
+    "langchain_community.document_loaders",
+    "langchain_text_splitters",
 ]
 for _mod in _MISSING_MODULES:
     if _mod not in sys.modules:

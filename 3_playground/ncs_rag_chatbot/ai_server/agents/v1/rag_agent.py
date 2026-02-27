@@ -11,6 +11,7 @@ from langchain.chat_models import init_chat_model
 from langgraph.checkpoint.memory import InMemorySaver
 from agents.base import BaseAgent
 from infra.prompt_loader import get_prompt
+from config import settings
 from typing import List
 
 
@@ -30,9 +31,9 @@ def _build_system_prompt() -> str:
 
 class ChatAgent(BaseAgent):
 
-    def __init__(self, model_name: str = "gpt-4o-mini", system_prompt: str = None):
+    def __init__(self, model_name: str = None, system_prompt: str = None):
         super().__init__()
-        self.model = init_chat_model(model_name)
+        self.model = init_chat_model(model_name or settings.model_name)
         self.checkpointer = InMemorySaver()
         self.system_prompt = system_prompt if system_prompt is not None else _build_system_prompt()
 
