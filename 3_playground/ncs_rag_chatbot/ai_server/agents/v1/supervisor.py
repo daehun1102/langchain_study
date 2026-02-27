@@ -71,7 +71,7 @@ def _build_supervisor_tools(rag_agent, sql_agent) -> List:
 
 class SupervisorAgent(BaseAgent):
 
-    def __init__(self, rag_agent, sql_agent, model_name: str = None):
+    def __init__(self, rag_agent, sql_agent, model_name: str | None = None):
         super().__init__()
         self.model = _lc_chat.init_chat_model(model_name or settings.model_name)
         self.checkpointer = InMemorySaver()
