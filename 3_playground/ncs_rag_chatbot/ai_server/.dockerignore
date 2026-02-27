@@ -1,4 +1,12 @@
 venv/
-__pycache__/
-*.pyc
+**/__pycache__/
+**/*.pyc
+**/*.pyo
 .env
+tests/
+eval/
+scripts/
+pytest.ini
+*.md
+.git/
+.gitignore
