@@ -125,7 +125,11 @@ async def delete_vectors(doc_id: str):
 async def ingest(req: IngestRequest):
     """Spring에서 PDF 업로드 후 호출. PGVector에 벡터 저장."""
     try:
-        chunks = await ingest_single_document(req.doc_id, req.file_path, settings.db_connection)
+        chunks = await ingest_single_document(
+            req.doc_id,
+            req.file_path,
+            vsm=vector_store_manager,
+        )
         return IngestResponse(doc_id=req.doc_id, chunks=chunks, status="INDEXED")
     except Exception:
         logger.error("[ingest] 오류:\n%s", traceback.format_exc())

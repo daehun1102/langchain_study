@@ -274,3 +274,41 @@ def test_chat_agent_model_name_default_is_none():
     from agents.v1.rag_agent import ChatAgent
     sig = inspect.signature(ChatAgent.__init__)
     assert sig.parameters["model_name"].default is None
+
+
+async def test_ingest_uses_vsm_when_provided():
+    """ingest_single_document(vsm=...)이 주어지면 vsm.get_vector_store()를 사용한다."""
+    from unittest.mock import AsyncMock, MagicMock, patch
+
+    mock_vsm = MagicMock()
+    mock_vs = MagicMock()
+    mock_vsm.get_vector_store.return_value = mock_vs
+    mock_vs.aadd_documents = AsyncMock(return_value=None)
+
+    mock_loader = MagicMock()
+    mock_loader.load.return_value = []
+    mock_splitter = MagicMock()
+    mock_splitter.split_documents.return_value = []
+
+    with patch("infra.ingest.DocumentLoader", return_value=mock_loader), \
+         patch("infra.ingest.DocumentSplitter", return_value=mock_splitter):
+        from infra.ingest import ingest_single_document
+        result = await ingest_single_document(
+            doc_id="test-id",
+            file_path="/fake/path.pdf",
+            vsm=mock_vsm,
+        )
+
+    mock_vsm.get_vector_store.assert_called_once()
+    assert result == 0  # splits is empty so 0 chunks
+
+
+def test_ingest_signature_has_vsm_and_db_connection():
+    """ingest_single_document의 시그니처에 vsm, db_connection 파라미터가 있다."""
+    import inspect
+    from infra.ingest import ingest_single_document
+    sig = inspect.signature(ingest_single_document)
+    assert "vsm" in sig.parameters
+    assert "db_connection" in sig.parameters
+    # db_connection should default to None (optional when vsm is provided)
+    assert sig.parameters["db_connection"].default is None

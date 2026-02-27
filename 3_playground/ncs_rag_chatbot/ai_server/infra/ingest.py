@@ -52,20 +52,31 @@ async def init_table(db_connection: str):
     print(f"[ingest] 테이블 '{TABLE_NAME}' 초기화 완료")
 
 
-async def ingest_single_document(doc_id: str, file_path: str, db_connection: str) -> int:
+async def ingest_single_document(
+    doc_id: str,
+    file_path: str,
+    db_connection: str | None = None,
+    vsm=None,  # VectorStoreManager | None — 서버에서 재사용 시 전달
+) -> int:
     """단일 PDF를 PGVector에 적재한다.
 
     Args:
         doc_id: Oracle documents 테이블의 PK (UUID)
         file_path: PDF 파일 절대 경로
-        db_connection: PGVector 연결 문자열
+        db_connection: PGVector 연결 문자열 (CLI 실행 시 필수, vsm 미사용 시)
+        vsm: 서버의 VectorStoreManager 인스턴스 (전달 시 재사용, CLI는 None)
 
     Returns:
         저장된 청크 수
     """
-    embedding_model = EmbeddingModel().get_embeddings()
-    pg_engine = await _get_pg_engine(db_connection)
-    vector_store = await _get_vector_store(pg_engine, embedding_model)
+    if vsm is not None:
+        vector_store = vsm.get_vector_store()
+    else:
+        if db_connection is None:
+            raise ValueError("vsm 또는 db_connection 중 하나는 필수입니다.")
+        embedding_model = EmbeddingModel().get_embeddings()
+        pg_engine = await _get_pg_engine(db_connection)
+        vector_store = await _get_vector_store(pg_engine, embedding_model)
 
     loader = DocumentLoader(file_path=file_path)
     docs = loader.load()
