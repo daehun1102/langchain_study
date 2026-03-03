@@ -9,12 +9,19 @@ vector_store.py — PGVectorStore 관리 모듈
 - delete_by_doc_id(): doc_id 청크 일괄 삭제 (삭제 일관성)
 """
 
-from langchain_postgres import PGEngine, PGVectorStore
+from langchain_postgres import PGEngine, PGVectorStore, Column
 from typing import List, Optional
 from langchain_core.documents import Document
 from sqlalchemy.ext.asyncio import create_async_engine
 
 TABLE_NAME = "ncs_vectors"
+
+VECTOR_SIZE = 1536  # text-embedding-3-small
+
+METADATA_COLUMNS = [
+    Column("doc_id", "VARCHAR", nullable=True),
+    Column("page", "INTEGER", nullable=True),
+]
 
 
 class VectorStoreManager:
@@ -28,6 +35,12 @@ class VectorStoreManager:
         """VectorStoreManager 인스턴스를 비동기로 생성한다."""
         engine = create_async_engine(connection_string)
         pg_engine = PGEngine.from_engine(engine)
+        await pg_engine.ainit_vectorstore_table(
+            table_name=TABLE_NAME,
+            vector_size=VECTOR_SIZE,
+            metadata_columns=METADATA_COLUMNS,
+            overwrite_existing=False,
+        )
         vector_store = await PGVectorStore.create(
             engine=pg_engine,
             table_name=TABLE_NAME,

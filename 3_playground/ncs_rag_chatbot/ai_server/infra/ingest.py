@@ -15,21 +15,14 @@ if TYPE_CHECKING:
 from infra.loader import DocumentLoader
 from infra.splitter import DocumentSplitter
 from infra.embeddings import EmbeddingModel
-from infra.vector_store import TABLE_NAME
-from langchain_postgres import PGEngine, PGVectorStore, Column
+from infra.vector_store import TABLE_NAME, VECTOR_SIZE, METADATA_COLUMNS
+from langchain_postgres import PGEngine, PGVectorStore
 from sqlalchemy.ext.asyncio import create_async_engine
 from dotenv import load_dotenv
 import asyncio
 import os
 
 load_dotenv()
-VECTOR_SIZE = 1536  # text-embedding-3-small
-
-# PGVector에는 doc_id(Oracle 참조)와 page만 저장
-METADATA_COLUMNS = [
-    Column("doc_id", "VARCHAR", nullable=True),
-    Column("page", "INTEGER", nullable=True),
-]
 
 
 async def _get_pg_engine(db_connection: str):
