@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sdi.chatbot.mapper.DocumentMapper">
+
+  <select id="findAll" resultType="com.sdi.chatbot.model.Document">
+    SELECT doc_id, filename, doc_type, status, created_at
+    FROM documents
+    ORDER BY created_at DESC
+  </select>
+
+  <insert id="insert">
+    INSERT INTO documents (doc_id, filename, doc_type, status)
+    VALUES (#{docId}, #{filename}, #{docType}, #{status})
+  </insert>
+
+  <delete id="deleteByDocId">
+    DELETE FROM documents WHERE doc_id = #{docId}
+  </delete>
+
+  <update id="updateStatus">
+    UPDATE documents SET status = #{status} WHERE doc_id = #{docId}
+  </update>
+
+</mapper>
