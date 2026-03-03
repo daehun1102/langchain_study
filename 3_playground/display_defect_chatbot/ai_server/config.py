@@ -1,9 +1,11 @@
 # display_defect_chatbot/ai_server/config.py
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from functools import lru_cache
 
 
 class Settings(BaseSettings):
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+
     openai_api_key: str
     postgres_user: str = "postgres"
     postgres_password: str = "1234"
@@ -15,9 +17,6 @@ class Settings(BaseSettings):
     embedding_model: str = "text-embedding-3-small"
 
     phoenix_collector_endpoint: str = "http://phoenix:4317"
-
-    class Config:
-        env_file = ".env"
 
     @property
     def pg_async_url(self) -> str:
