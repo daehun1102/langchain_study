@@ -1,0 +1,12 @@
+# display_defect_chatbot/.gitignore
+.env
+__pycache__/
+*.pyc
+*.class
+target/
+node_modules/
+dist/
+.venv/
+*.log
+uploads/
+bg_results/
