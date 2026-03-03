@@ -1,0 +1,38 @@
+fastapi==0.128.7
+uvicorn==0.40.0
+pydantic==2.12.5
+pydantic-settings==2.12.0
+python-dotenv==1.2.1
+
+# LangChain / LangGraph
+langchain==1.2.9
+langchain-core==1.2.9
+langchain-openai==1.1.7
+langchain-postgres==0.0.16
+langchain-text-splitters==1.1.0
+langgraph==1.0.8
+langgraph-checkpoint==4.0.0
+langgraph-prebuilt==1.0.7
+
+# OpenAI
+openai==2.17.0
+tiktoken==0.12.0
+
+# PostgreSQL async
+SQLAlchemy==2.0.46
+asyncpg==0.31.0
+psycopg==3.3.2
+psycopg-binary==3.3.2
+psycopg-pool==3.3.0
+psycopg2-binary==2.9.11
+pgvector==0.3.6
+
+# Utils
+httpx==0.28.1
+anyio==4.12.1
+python-multipart==0.0.20
+
+# Tracing (optional)
+arize-phoenix-otel==0.14.0
+openinference-instrumentation-langchain==0.1.59
+opentelemetry-exporter-otlp==1.39.1
