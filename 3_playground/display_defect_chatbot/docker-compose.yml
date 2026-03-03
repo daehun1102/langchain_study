@@ -46,6 +46,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      phoenix:
+        condition: service_started
     networks:
       - defect-network
 
@@ -60,7 +62,10 @@ services:
     ports:
       - "8081:8080"
     depends_on:
-      - ai-server
+      postgres:
+        condition: service_healthy
+      ai-server:
+        condition: service_started
     networks:
       - defect-network
     extra_hosts:

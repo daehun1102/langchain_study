@@ -1,0 +1,14 @@
+# ai_server build context excludes
+ai_server/venv/
+ai_server/**/__pycache__/
+ai_server/**/*.pyc
+ai_server/**/*.pyo
+ai_server/tests/
+ai_server/.env
+
+# General
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+.env
+.git/
