@@ -13,9 +13,10 @@ METADATA_COLUMNS = [
 
 
 class VectorStoreManager:
-    def __init__(self, pg_engine, vector_store):
+    def __init__(self, pg_engine, vector_store, engine):
         self.pg_engine = pg_engine
         self.vector_store = vector_store
+        self._engine = engine  # public reference for raw SQL (avoids pg_engine._pool private API)
 
     @classmethod
     async def create(cls, connection_string: str, embedding_model):
@@ -33,7 +34,7 @@ class VectorStoreManager:
             embedding_service=embedding_model,
             metadata_columns=["doc_id", "chunk_index"],
         )
-        return cls(pg_engine, vector_store)
+        return cls(pg_engine, vector_store, engine)
 
     async def similarity_search(self, query: str, doc_ids: Optional[List[str]] = None, k: int = 4) -> List[Document]:
         if doc_ids:
@@ -44,8 +45,7 @@ class VectorStoreManager:
 
     async def delete_by_doc_id(self, doc_id: str) -> int:
         from sqlalchemy import text
-        engine = self.pg_engine._pool
-        async with engine.begin() as conn:
+        async with self._engine.begin() as conn:
             result = await conn.execute(
                 text(f"DELETE FROM {TABLE_NAME} WHERE doc_id = :doc_id"),
                 {"doc_id": doc_id},
