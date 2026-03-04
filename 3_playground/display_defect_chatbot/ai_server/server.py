@@ -1,6 +1,7 @@
 # display_defect_chatbot/ai_server/server.py
 from fastapi import FastAPI, UploadFile, File, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
+from pydantic.alias_generators import to_camel
 from typing import Optional
 from uuid import uuid4
 import os
@@ -9,7 +10,6 @@ import tempfile
 from ai_server.config import get_settings
 from ai_server.infra.vector_store import VectorStoreManager
 from ai_server.infra.ingest import ingest_document
-from ai_server.infra.tracing import setup_tracing
 from ai_server.infra.database import get_db_session
 from ai_server.agents.main_agent import run_main_analysis
 from ai_server.agents.graph import investigation_graph, DefectAnalysisState
@@ -25,7 +25,6 @@ vsm: Optional[VectorStoreManager] = None
 @app.on_event("startup")
 async def startup():
     global vsm
-    setup_tracing(settings.phoenix_collector_endpoint)
     embedding = OpenAIEmbeddings(model=settings.embedding_model)
     vsm = await VectorStoreManager.create(settings.pg_async_url, embedding)
 
@@ -33,6 +32,7 @@ async def startup():
 # ── Request/Response Models ──────────────────────────────────
 
 class AnalyzeRequest(BaseModel):
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
     session_id: str
     company: str
     defect_description: str
@@ -44,6 +44,7 @@ class AnalyzeResponse(BaseModel):
 
 
 class InvestigateRequest(BaseModel):
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
     session_id: str
     company: str
     defect_description: str
