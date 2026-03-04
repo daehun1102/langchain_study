@@ -2,6 +2,7 @@
 from langchain_postgres import PGEngine, PGVectorStore, Column
 from langchain_core.documents import Document
 from sqlalchemy.ext.asyncio import create_async_engine
+from sqlalchemy.exc import ProgrammingError
 from typing import List, Optional
 
 TABLE_NAME = "defect_vectors"
@@ -22,12 +23,15 @@ class VectorStoreManager:
     async def create(cls, connection_string: str, embedding_model):
         engine = create_async_engine(connection_string)
         pg_engine = PGEngine.from_engine(engine)
-        await pg_engine.ainit_vectorstore_table(
-            table_name=TABLE_NAME,
-            vector_size=VECTOR_SIZE,
-            metadata_columns=METADATA_COLUMNS,
-            overwrite_existing=False,
-        )
+        try:
+            await pg_engine.ainit_vectorstore_table(
+                table_name=TABLE_NAME,
+                vector_size=VECTOR_SIZE,
+                metadata_columns=METADATA_COLUMNS,
+                overwrite_existing=False,
+            )
+        except ProgrammingError:
+            pass  # Table already exists, skip creation
         vector_store = await PGVectorStore.create(
             engine=pg_engine,
             table_name=TABLE_NAME,
