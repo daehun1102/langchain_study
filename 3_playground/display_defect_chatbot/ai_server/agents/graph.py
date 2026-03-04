@@ -4,10 +4,15 @@ LangGraph Send API 병렬 서브에이전트 그래프
 
 흐름: START → [Send API 병렬 팬아웃] → 4개 서브에이전트 → synthesis → END
 """
-from typing import TypedDict, Optional
+from typing import Annotated, TypedDict, Optional
 from langgraph.graph import StateGraph, START, END
 from langgraph.types import Send
 from langgraph.checkpoint.memory import InMemorySaver
+
+
+def replace_list(current: list, update: list) -> list:
+    """서브에이전트 결과 reducer: 새 값으로 교체 (operator.add 누적 방지)"""
+    return update
 
 from ai_server.agents.sub.process_history import process_history_node
 from ai_server.agents.sub.return_history import return_history_node
@@ -24,11 +29,11 @@ class DefectAnalysisState(TypedDict):
     selected_hypothesis: str
     session_id: str
 
-    # 병렬 서브에이전트 결과 (각 필드는 단일 서브에이전트만 기록 — last-write-wins)
-    process_history_result: list
-    return_history_result: list
-    test_result: list
-    long_term_task_id: list
+    # 병렬 서브에이전트 결과 (replace_list reducer: 재호출 시 이전 값 교체)
+    process_history_result: Annotated[list, replace_list]
+    return_history_result: Annotated[list, replace_list]
+    test_result: Annotated[list, replace_list]
+    long_term_task_id: Annotated[list, replace_list]
 
     # 최종 출력
     final_action_plan: str
