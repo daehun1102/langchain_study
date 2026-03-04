@@ -78,7 +78,7 @@ async def analyze_defect(req: AnalyzeRequest):
 @app.post("/internal/investigate", response_model=InvestigateResponse)
 async def investigate_defect(req: InvestigateRequest):
     """2단계: 가설 선택 후 Send API 병렬 서브에이전트 실행"""
-    config = {"configurable": {"thread_id": str(uuid4())}}
+    config = {"configurable": {"thread_id": req.session_id}}
     initial_state: DefectAnalysisState = {
         "company": req.company,
         "defect_description": req.defect_description,

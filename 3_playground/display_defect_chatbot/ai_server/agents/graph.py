@@ -4,8 +4,7 @@ LangGraph Send API 병렬 서브에이전트 그래프
 
 흐름: START → [Send API 병렬 팬아웃] → 4개 서브에이전트 → synthesis → END
 """
-import operator
-from typing import Annotated, TypedDict, Optional
+from typing import TypedDict, Optional
 from langgraph.graph import StateGraph, START, END
 from langgraph.types import Send
 from langgraph.checkpoint.memory import InMemorySaver
@@ -25,11 +24,11 @@ class DefectAnalysisState(TypedDict):
     selected_hypothesis: str
     session_id: str
 
-    # 병렬 서브에이전트 결과 (operator.add로 합산)
-    process_history_result: Annotated[list, operator.add]
-    return_history_result: Annotated[list, operator.add]
-    test_result: Annotated[list, operator.add]
-    long_term_task_id: Annotated[list, operator.add]
+    # 병렬 서브에이전트 결과 (각 필드는 단일 서브에이전트만 기록 — last-write-wins)
+    process_history_result: list
+    return_history_result: list
+    test_result: list
+    long_term_task_id: list
 
     # 최종 출력
     final_action_plan: str
