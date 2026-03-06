@@ -21,6 +21,7 @@ export function useDefectChat() {
   const step = ref('input')
   const loading = ref(false)
   const error = ref(null)
+  const pollTimer = ref(null)
 
   const form = reactive({
     company: 'SDC',
@@ -76,6 +77,8 @@ export function useDefectChat() {
       agentResults: JSON.parse(JSON.stringify(agentResults)),
       chatMessages: JSON.parse(JSON.stringify(chatMessages.value)),
       enabledAgents: { ...enabledAgents },
+      longTermStatus: longTermStatus.value,
+      longTermResult: longTermResult.value,
     }
     if (existing >= 0) {
       sessions.value[existing] = record
@@ -102,11 +105,15 @@ export function useDefectChat() {
     selectedHypothesis.value = session.hypothesis
     chatMessages.value = session.chatMessages || []
     Object.assign(agentResults, session.agentResults)
+    if (session.enabledAgents) Object.assign(enabledAgents, session.enabledAgents)
+    longTermStatus.value = session.longTermStatus || 'PENDING'
+    longTermResult.value = session.longTermResult || null
     step.value = 'result'
   }
 
   // --- 새 분석 시작 ---
   function newAnalysis() {
+    if (pollTimer.value) { clearInterval(pollTimer.value); pollTimer.value = null }
     sessionId.value = uuidv4()
     activeSessionId.value = null
     step.value = 'input'
@@ -209,20 +216,24 @@ export function useDefectChat() {
   }
 
   function pollBgStatus(taskId) {
-    const timer = setInterval(async () => {
-      const data = await getBgStatus(taskId)
-      longTermStatus.value = data.status
-      if (data.status === 'COMPLETED' || data.status === 'FAILED') {
-        longTermResult.value = data.resultText
-        if (data.status === 'COMPLETED') {
-          const r = { suspectRows: [], analysis: data.resultText || '' }
-          agentResults['long_term'] = r
-          _updateMessage('long_term', 'done', r)
-        } else {
-          _updateMessage('long_term', 'error', null)
+    pollTimer.value = setInterval(async () => {
+      try {
+        const data = await getBgStatus(taskId)
+        longTermStatus.value = data.status
+        if (data.status === 'COMPLETED' || data.status === 'FAILED') {
+          longTermResult.value = data.resultText
+          if (data.status === 'COMPLETED') {
+            const r = { suspectRows: [], analysis: data.resultText || '' }
+            agentResults['long_term'] = r
+            _updateMessage('long_term', 'done', r)
+          } else {
+            _updateMessage('long_term', 'error', null)
+          }
+          clearInterval(pollTimer.value); pollTimer.value = null
+          saveCurrentSession()
         }
-        clearInterval(timer)
-        saveCurrentSession()
+      } catch (e) {
+        clearInterval(pollTimer.value); pollTimer.value = null
       }
     }, 3000)
   }
