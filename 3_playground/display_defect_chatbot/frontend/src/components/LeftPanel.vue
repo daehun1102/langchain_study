@@ -8,7 +8,7 @@
     <div class="session-list">
       <p v-if="sessions.length === 0" class="empty-hint">분석 이력이 없습니다.</p>
 
-      <div
+      <button
         v-for="session in sessions"
         :key="session.id"
         class="session-card"
@@ -17,7 +17,12 @@
       >
         <div class="card-top">
           <span class="product-id">{{ session.productId || '-' }}</span>
-          <button class="btn-delete" @click.stop="$emit('delete-session', session.id)">🗑</button>
+          <button
+            class="btn-delete"
+            :aria-label="`세션 삭제: ${session.productId || session.id}`"
+            :title="`세션 삭제: ${session.productId || session.id}`"
+            @click.stop="$emit('delete-session', session.id)"
+          >🗑</button>
         </div>
         <p class="defect-desc">{{ truncate(session.defectDescription) }}</p>
         <div class="card-bottom">
@@ -26,7 +31,7 @@
           </span>
           <span class="timestamp">{{ formatDate(session.timestamp) }}</span>
         </div>
-      </div>
+      </button>
     </div>
   </aside>
 </template>
@@ -36,7 +41,7 @@ import { AGENT_CONFIG } from '../composables/useDefectChat.js'
 
 const props = defineProps({
   sessions: { type: Array, default: () => [] },
-  activeSessionId: { type: String, default: null },
+  activeSessionId: { type: [String, null], default: null },
 })
 defineEmits(['new-analysis', 'load-session', 'delete-session'])
 
@@ -106,8 +111,17 @@ function ranAgents(session) {
   padding: 12px;
   cursor: pointer;
   transition: border-color 0.15s;
+  width: 100%;
+  text-align: left;
+  color: inherit;
+  font: inherit;
+  display: block;
 }
 .session-card:hover { border-color: #374151; }
+.session-card:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
 .session-card.active { border-color: #3b82f6; background: #0f1c35; }
 
 .card-top {
