@@ -69,7 +69,7 @@ function ranAgents(session) {
   border-right: 1px solid #2a2d3a;
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  height: 100%;
   overflow: hidden;
 }
 
