@@ -13,6 +13,7 @@ export async function callAgent(payload) {
 
 export async function getBgStatus(taskId) {
   const res = await fetch(`${BASE}/chat/bg-status/${taskId}`)
+  if (!res.ok) throw new Error(await res.text())
   return res.json()
 }
 
