@@ -49,6 +49,7 @@ class AgentRequest(BaseModel):
 
 
 class AgentResponse(BaseModel):
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
     action: str
     # start
     hypotheses: Optional[list[str]] = None
@@ -94,7 +95,7 @@ def _build_response(interrupt_value: dict, action: str) -> AgentResponse:
 
 # ── Endpoints ──────────────────────────────────────────────────────────────
 
-@app.post("/internal/agent", response_model=AgentResponse)
+@app.post("/internal/agent", response_model=AgentResponse, response_model_by_alias=True)
 async def agent_endpoint(req: AgentRequest, request: Request):
     """단일 엔드포인트: action에 따라 그래프 start 또는 resume"""
     graph = request.app.state.graph

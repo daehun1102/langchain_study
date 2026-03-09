@@ -164,7 +164,7 @@ export function useDefectChat() {
         company: form.company,
         defectDescription: form.defectDescription,
         productId: form.productId,
-        enabledAgents: AGENT_CONFIG.map(a => a.key),
+        enabledAgents: AGENT_CONFIG.map(a => a.key).filter(k => enabledAgents[k]),
       })
       hypotheses.value = data.hypotheses || []
       step.value = 'hypotheses'
