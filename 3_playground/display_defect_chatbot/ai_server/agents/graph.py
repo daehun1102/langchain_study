@@ -69,13 +69,21 @@ async def hypothesis_node(state: DefectAnalysisState, config: RunnableConfig) ->
     if not hypotheses:
         hypotheses = [text]
 
-    # interrupt: 클라이언트에 가설 목록 반환, 선택된 가설 수신
-    selected_hypothesis: str = interrupt({"hypotheses": hypotheses})
+    # interrupt: 클라이언트에 가설 목록 반환
+    # resume 값은 {"selected_hypothesis": str, "enabled_agents": list} 형태의 dict
+    resume = interrupt({"hypotheses": hypotheses})
 
-    return {
-        "hypotheses": hypotheses,
-        "selected_hypothesis": selected_hypothesis,
-    }
+    if isinstance(resume, dict):
+        selected = resume.get("selected_hypothesis", "")
+        enabled = resume.get("enabled_agents")
+    else:
+        selected = resume
+        enabled = None
+
+    result: dict = {"hypotheses": hypotheses, "selected_hypothesis": selected}
+    if enabled is not None:
+        result["enabled_agents"] = enabled
+    return result
 
 
 def route_to_agents(state: DefectAnalysisState) -> list[Send]:
@@ -86,17 +94,27 @@ def route_to_agents(state: DefectAnalysisState) -> list[Send]:
 
 
 async def await_long_term_node(state: DefectAnalysisState) -> dict:
-    """병렬 에이전트 완료 후 interrupt: agent_results + task_id 반환, 장기이력 결과 수신"""
+    """병렬 에이전트 완료 후 interrupt: agent_results + task_id 반환, 장기이력 결과 수신
+    long_term이 비활성(task_id 없음)이면 interrupt 없이 바로 통과."""
     agent_results = {
         "process_history": state.get("process_history_result"),
         "return_history":  state.get("return_history_result"),
         "test_result":     state.get("test_result"),
     }
-    long_term_result: str = interrupt({
-        "agent_results": agent_results,
-        "long_term_task_id": state.get("long_term_task_id"),
-    })
-    return {"long_term_result": long_term_result}
+    task_id = state.get("long_term_task_id")
+
+    if task_id:
+        # long_term이 실행된 경우: 프론트 폴링 완료 후 resume 대기
+        long_term_result: str = interrupt({
+            "agent_results": agent_results,
+            "long_term_task_id": task_id,
+        })
+        return {"long_term_result": long_term_result}
+    else:
+        # long_term 미실행: 즉시 agent_results만 반환, interrupt 없이 통과
+        # 프론트에 결과를 전달하기 위해 별도 interrupt
+        interrupt({"agent_results": agent_results, "long_term_task_id": None})
+        return {"long_term_result": ""}
 
 
 async def chat_node(state: DefectAnalysisState) -> dict:

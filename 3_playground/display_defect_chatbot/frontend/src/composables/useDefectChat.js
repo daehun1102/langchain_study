@@ -196,6 +196,7 @@ export function useDefectChat() {
         sessionId: sessionId.value,
         action: 'select_hypothesis',
         selectedHypothesis: selectedHypothesis.value,
+        enabledAgents: enabledKeys,
       })
 
       const results = data.agentResults || {}
@@ -206,7 +207,18 @@ export function useDefectChat() {
           _updateMessage(key, 'done', r)
         }
       }
-      if (data.longTermTaskId) pollBgStatus(data.longTermTaskId)
+
+      if (data.longTermTaskId) {
+        pollBgStatus(data.longTermTaskId)
+      } else {
+        // 장기이력 미실행: 즉시 resume → final synthesis 트리거
+        const finalResp = await callAgent({
+          sessionId: sessionId.value,
+          action: 'resume_long_term',
+          longTermResult: '',
+        })
+        finalActionPlan.value = finalResp.finalActionPlan || ''
+      }
     } catch (e) {
       error.value = e.message
       enabledKeys.forEach(k => _updateMessage(k, 'error', null))

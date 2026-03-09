@@ -5,14 +5,14 @@ from typing import Optional
 from fastapi import FastAPI, UploadFile, File, HTTPException, Request
 from langchain_openai import OpenAIEmbeddings
 from langgraph.types import Command
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, field_validator
 from pydantic.alias_generators import to_camel
 import os
 import tempfile
 
 from ai_server.agents.graph import build_investigation_graph, ALL_AGENTS, DefectAnalysisState
 from ai_server.config import get_settings
-from ai_server.infra.checkpointer import create_checkpointer
+from ai_server.infra.checkpointer import checkpointer_lifespan
 from ai_server.infra.ingest import ingest_document
 from ai_server.infra.vector_store import VectorStoreManager
 from ai_server.tools.sql_tools import get_bg_task
@@ -24,9 +24,10 @@ settings = get_settings()
 async def lifespan(app: FastAPI):
     embedding = OpenAIEmbeddings(model=settings.embedding_model)
     app.state.vsm = await VectorStoreManager.create(settings.pg_async_url, embedding)
-    app.state.checkpointer = await create_checkpointer(settings.pg_checkpoint_url)
-    app.state.graph = build_investigation_graph(app.state.checkpointer)
-    yield
+    async with checkpointer_lifespan(settings.pg_checkpoint_url) as checkpointer:
+        app.state.checkpointer = checkpointer
+        app.state.graph = build_investigation_graph(checkpointer)
+        yield
 
 
 app = FastAPI(title="Defect AI Server", lifespan=lifespan)
@@ -46,6 +47,16 @@ class AgentRequest(BaseModel):
     selected_hypothesis: Optional[str] = None
     long_term_result: Optional[str] = None
     user_message: Optional[str] = None
+
+    @field_validator("company", "defect_description", "product_id", mode="before")
+    @classmethod
+    def null_to_empty_string(cls, v: object) -> str:
+        return v if v is not None else ""
+
+    @field_validator("enabled_agents", mode="before")
+    @classmethod
+    def null_to_default_agents(cls, v: object) -> list:
+        return v if v is not None else list(ALL_AGENTS)
 
 
 class AgentResponse(BaseModel):
@@ -128,14 +139,20 @@ async def agent_endpoint(req: AgentRequest, request: Request):
         result = await graph.ainvoke(initial_state, config=config)
 
     else:
-        resume_map = {
-            "select_hypothesis": req.selected_hypothesis,
-            "resume_long_term":  req.long_term_result,
-            "chat":              req.user_message,
-        }
-        resume_value = resume_map.get(req.action)
+        if req.action == "select_hypothesis":
+            # enabled_agents를 함께 전달해 그래프 state 업데이트
+            resume_value = {
+                "selected_hypothesis": req.selected_hypothesis,
+                "enabled_agents": req.enabled_agents,
+            }
+        elif req.action == "resume_long_term":
+            resume_value = req.long_term_result
+        elif req.action == "chat":
+            resume_value = req.user_message
+        else:
+            raise HTTPException(status_code=400, detail=f"Unknown action: {req.action}")
         if resume_value is None:
-            raise HTTPException(status_code=400, detail=f"Unknown action or missing payload: {req.action}")
+            raise HTTPException(status_code=400, detail=f"Missing payload for action: {req.action}")
         result = await graph.ainvoke(Command(resume=resume_value), config=config)
 
     interrupt_value = _parse_interrupt(result)
