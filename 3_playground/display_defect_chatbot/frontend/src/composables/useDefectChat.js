@@ -1,6 +1,6 @@
 // display_defect_chatbot/frontend/src/composables/useDefectChat.js
 import { ref, reactive, watch } from 'vue'
-import { analyzeDefect, investigateDefect, getBgStatus } from '../api/defectApi.js'
+import { callAgent, getBgStatus } from '../api/defectApi.js'
 
 function uuidv4() {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
@@ -41,10 +41,34 @@ export function useDefectChat() {
 
   const longTermStatus = ref('PENDING')
   const longTermResult = ref(null)
+  const finalActionPlan = ref('')
 
   // --- 신규: 채팅 메시지 스트림 ---
-  // { id, agentKey, status: 'loading'|'done'|'error', result: null|{ analysis, suspectRows } }
+  // { id, agentKey, status: 'loading'|'done'|'error'|'user', result: null|{ analysis, suspectRows }, userText?: string }
   const chatMessages = ref([])
+
+  // 사용자 입력
+  const userInput = ref('')
+
+  async function sendUserMessage() {
+    const text = userInput.value.trim()
+    if (!text) return
+    userInput.value = ''
+    chatMessages.value.push({ id: uuidv4(), agentKey: 'user', status: 'user', userText: text })
+
+    try {
+      const data = await callAgent({
+        sessionId: sessionId.value,
+        action: 'chat',
+        userMessage: text,
+      })
+      if (data.reply) {
+        chatMessages.value.push({ id: uuidv4(), agentKey: 'assistant', status: 'done', result: { analysis: data.reply, suspectRows: [] } })
+      }
+    } catch (e) {
+      error.value = e.message
+    }
+  }
 
   // --- 신규: 분석 이력 세션 ---
   // { id, productId, defectDescription, hypothesis, timestamp, agentResults, chatMessages }
@@ -130,16 +154,19 @@ export function useDefectChat() {
     })
   }
 
-  async function analyze() {
+  async function startAnalysis() {
     loading.value = true
     error.value = null
     try {
-      const data = await analyzeDefect({
+      const data = await callAgent({
         sessionId: sessionId.value,
+        action: 'start',
         company: form.company,
         defectDescription: form.defectDescription,
+        productId: form.productId,
+        enabledAgents: AGENT_CONFIG.map(a => a.key),
       })
-      hypotheses.value = data.hypotheses
+      hypotheses.value = data.hypotheses || []
       step.value = 'hypotheses'
     } catch (e) {
       error.value = e.message
@@ -148,56 +175,34 @@ export function useDefectChat() {
     }
   }
 
-  function selectHypothesis(hypothesis) {
+  async function selectHypothesis(hypothesis) {
     selectedHypothesis.value = hypothesis
-    step.value = 'agent_select'
-  }
-
-  function toggleAgent(key) {
-    enabledAgents[key] = !enabledAgents[key]
-  }
-
-  async function runAllEnabled() {
-    error.value = null
     step.value = 'result'
     loading.value = true
     chatMessages.value = []
 
     const enabledKeys = AGENT_CONFIG.map(a => a.key).filter(k => enabledAgents[k])
-
-    // 실행할 에이전트마다 로딩 말풍선 즉시 추가
     enabledKeys.forEach(k => {
       agentLoading[k] = true
       chatMessages.value.push({ id: uuidv4(), agentKey: k, status: 'loading', result: null })
     })
 
     try {
-      const data = await investigateDefect({
+      const data = await callAgent({
         sessionId: sessionId.value,
-        company: form.company,
-        defectDescription: form.defectDescription,
-        productId: form.productId,
-        selectedHypothesis: selectedHypothesis.value,
-        enabledAgents: enabledKeys,
+        action: 'select_hypothesis',
+        selectedHypothesis: hypothesis,
       })
 
-      if (data.processHistory) {
-        const r = { suspectRows: data.processHistory.suspectRows || [], analysis: data.processHistory.analysis || '' }
-        agentResults['process_history'] = r
-        _updateMessage('process_history', 'done', r)
-      }
-      if (data.returnHistory) {
-        const r = { suspectRows: data.returnHistory.suspectRows || [], analysis: data.returnHistory.analysis || '' }
-        agentResults['return_history'] = r
-        _updateMessage('return_history', 'done', r)
-      }
-      if (data.testResults) {
-        const r = { suspectRows: data.testResults.suspectRows || [], analysis: data.testResults.analysis || '' }
-        agentResults['test_result'] = r
-        _updateMessage('test_result', 'done', r)
+      const results = data.agentResults || {}
+      for (const [key, val] of Object.entries(results)) {
+        if (val) {
+          const r = { suspectRows: val.suspect_rows || [], analysis: val.analysis || '' }
+          agentResults[key] = r
+          _updateMessage(key, 'done', r)
+        }
       }
       if (data.longTermTaskId) pollBgStatus(data.longTermTaskId)
-
     } catch (e) {
       error.value = e.message
       enabledKeys.forEach(k => _updateMessage(k, 'error', null))
@@ -206,6 +211,10 @@ export function useDefectChat() {
       loading.value = false
       saveCurrentSession()
     }
+  }
+
+  function toggleAgent(key) {
+    enabledAgents[key] = !enabledAgents[key]
   }
 
   function _updateMessage(agentKey, status, result) {
@@ -221,15 +230,22 @@ export function useDefectChat() {
         const data = await getBgStatus(taskId)
         longTermStatus.value = data.status
         if (data.status === 'COMPLETED' || data.status === 'FAILED') {
+          clearInterval(pollTimer.value); pollTimer.value = null
           longTermResult.value = data.resultText
+
           if (data.status === 'COMPLETED') {
+            const response = await callAgent({
+              sessionId: sessionId.value,
+              action: 'resume_long_term',
+              longTermResult: data.resultText || '',
+            })
             const r = { suspectRows: [], analysis: data.resultText || '' }
             agentResults['long_term'] = r
             _updateMessage('long_term', 'done', r)
+            finalActionPlan.value = response.finalActionPlan || ''
           } else {
             _updateMessage('long_term', 'error', null)
           }
-          clearInterval(pollTimer.value); pollTimer.value = null
           saveCurrentSession()
         }
       } catch (e) {
@@ -245,10 +261,11 @@ export function useDefectChat() {
     sessionId, step, loading, error,
     form, hypotheses, selectedHypothesis,
     enabledAgents, agentLoading, agentResults,
-    longTermStatus, longTermResult,
+    longTermStatus, longTermResult, finalActionPlan,
     chatMessages,
+    userInput, sendUserMessage,
     sessions, activeSessionId,
-    analyze, selectHypothesis, toggleAgent, runAllEnabled,
+    startAnalysis, selectHypothesis, toggleAgent,
     saveCurrentSession, deleteSession, loadSession, newAnalysis, reset,
   }
 }

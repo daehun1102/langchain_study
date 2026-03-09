@@ -1,31 +1,22 @@
-// display_defect_chatbot/frontend/src/api/defectApi.js
+// frontend/src/api/defectApi.js
 const BASE = '/api'
 
-export async function analyzeDefect({ sessionId, company, defectDescription }) {
-  const res = await fetch(`${BASE}/chat/analyze`, {
+export async function callAgent(payload) {
+  const res = await fetch(`${BASE}/chat/agent`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ sessionId, company, defectDescription })
-  })
-  if (!res.ok) throw new Error(await res.text())
-  return res.json()
-}
-
-export async function investigateDefect({ sessionId, company, defectDescription, productId, selectedHypothesis }) {
-  const res = await fetch(`${BASE}/chat/investigate`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ sessionId, company, defectDescription, productId, selectedHypothesis })
+    body: JSON.stringify(payload),
   })
   if (!res.ok) throw new Error(await res.text())
   return res.json()
 }
 
 export async function getBgStatus(taskId) {
-  const res = await fetch(`${BASE}/sessions/bg-status/${taskId}`)
+  const res = await fetch(`${BASE}/chat/bg-status/${taskId}`)
   return res.json()
 }
 
+// 문서 관리 (유지)
 export async function uploadDocument(file) {
   const form = new FormData()
   form.append('file', file)
