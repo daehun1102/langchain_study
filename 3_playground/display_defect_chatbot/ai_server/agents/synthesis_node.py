@@ -1,56 +1,44 @@
-# display_defect_chatbot/ai_server/agents/synthesis_node.py
-from langchain_openai import ChatOpenAI
-from langchain_core.messages import SystemMessage, HumanMessage
-from ai_server.config import get_settings
+# ai_server/agents/synthesis_node.py
 import json
 
+from langchain_openai import ChatOpenAI
+from langchain_core.messages import SystemMessage, HumanMessage
+from ai_server.agents.state import DefectAnalysisState
+from ai_server.agents.prompts import FINAL_SYNTHESIS_SYSTEM_PROMPT
+from ai_server.config import get_settings
+
 settings = get_settings()
-
-SYNTHESIS_SYSTEM_PROMPT = """당신은 삼성 디스플레이 품질관리 전문가입니다.
-공정이력, 반송이력, 테스트결과 데이터를 종합하여 구체적인 조치 방안을 제시하세요.
-
-응답 구조:
-## 원인 분석 요약
-(선택된 가설 + 수집 데이터 기반 분석)
-
-## 즉시 조치 사항
-1. ...
-2. ...
-
-## 재발 방지 대책
-1. ...
-2. ...
-
-## 추가 확인 필요 사항
-- ..."""
+_llm = ChatOpenAI(model=settings.model_name, temperature=0.2)
 
 
-async def synthesis_node(state: dict) -> dict:
-    """서브에이전트 3종 결과를 종합하여 최종 조치안 생성"""
-    llm = ChatOpenAI(model=settings.model_name, temperature=0.2)
+def _fmt(result: dict | None) -> str:
+    if not result:
+        return "데이터 없음"
+    return f"분석: {result.get('analysis', '')}\n의심 데이터: {json.dumps(result.get('suspect_rows', []), ensure_ascii=False, default=str, indent=2)}"
 
-    def fmt(data: list) -> str:
-        if not data:
-            return "데이터 없음"
-        return json.dumps(data, ensure_ascii=False, default=str, indent=2)
 
+async def final_synthesis_node(state: DefectAnalysisState) -> dict:
+    """3개 에이전트 + 장기이력 결과를 모두 포함한 최종 조치안 생성"""
     content = f"""
-[선택된 가설]: {state.get('selected_hypothesis', '미선택')}
-[불량 증상]: {state.get('defect_description', '')}
-[회사]: {state.get('company', '')}
+[선택된 가설]: {state["selected_hypothesis"]}
+[불량 증상]: {state["defect_description"]}
+[회사]: {state["company"]}
 
-[공정이력 데이터]
-{fmt(state.get('process_history_result', []))}
+[공정이력 에이전트 분석]
+{_fmt(state.get("process_history_result"))}
 
-[반송이력 데이터]
-{fmt(state.get('return_history_result', []))}
+[반송이력 에이전트 분석]
+{_fmt(state.get("return_history_result"))}
 
-[테스트결과 데이터]
-{fmt(state.get('test_result', []))}
+[테스트결과 에이전트 분석]
+{_fmt(state.get("test_result"))}
+
+[장기이력 분석]
+{state.get("long_term_result") or "데이터 없음"}
 """
     messages = [
-        SystemMessage(content=SYNTHESIS_SYSTEM_PROMPT),
+        SystemMessage(content=FINAL_SYNTHESIS_SYSTEM_PROMPT),
         HumanMessage(content=content),
     ]
-    response = await llm.ainvoke(messages)
+    response = await _llm.ainvoke(messages)
     return {"final_action_plan": response.content}
