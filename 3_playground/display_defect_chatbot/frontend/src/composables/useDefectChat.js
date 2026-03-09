@@ -175,8 +175,12 @@ export function useDefectChat() {
     }
   }
 
-  async function selectHypothesis(hypothesis) {
+  function selectHypothesis(hypothesis) {
     selectedHypothesis.value = hypothesis
+    step.value = 'agent_select'
+  }
+
+  async function runAgents() {
     step.value = 'result'
     loading.value = true
     chatMessages.value = []
@@ -191,7 +195,7 @@ export function useDefectChat() {
       const data = await callAgent({
         sessionId: sessionId.value,
         action: 'select_hypothesis',
-        selectedHypothesis: hypothesis,
+        selectedHypothesis: selectedHypothesis.value,
       })
 
       const results = data.agentResults || {}
@@ -265,7 +269,7 @@ export function useDefectChat() {
     chatMessages,
     userInput, sendUserMessage,
     sessions, activeSessionId,
-    startAnalysis, selectHypothesis, toggleAgent,
+    startAnalysis, selectHypothesis, runAgents, toggleAgent,
     saveCurrentSession, deleteSession, loadSession, newAnalysis, reset,
   }
 }

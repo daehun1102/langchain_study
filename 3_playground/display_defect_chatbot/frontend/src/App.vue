@@ -30,6 +30,14 @@
             :hypotheses="hypotheses" :loading="loading"
             @select="selectHypothesis"
           />
+          <AgentSelector
+            v-if="step === 'agent_select'"
+            :hypothesis="selectedHypothesis"
+            :enabledAgents="enabledAgents"
+            :loading="loading"
+            @toggle="toggleAgent"
+            @run-all="runAgents"
+          />
         </div>
 
         <!-- result 단계: 가설 배지 + ChatStream + 사용자 입력 -->
@@ -71,13 +79,15 @@ import { useDefectChat } from './composables/useDefectChat.js'
 import LeftPanel from './components/LeftPanel.vue'
 import InputView from './components/InputView.vue'
 import HypothesisSelector from './components/HypothesisSelector.vue'
+import AgentSelector from './components/AgentSelector.vue'
 import ChatStream from './components/ChatStream.vue'
 
 const {
   step, loading, error, form, hypotheses, selectedHypothesis,
   chatMessages,
   sessions, activeSessionId,
-  startAnalysis, selectHypothesis,
+  enabledAgents,
+  startAnalysis, selectHypothesis, runAgents, toggleAgent,
   newAnalysis, loadSession, deleteSession,
   userInput, sendUserMessage,
 } = useDefectChat()
