@@ -1,5 +1,6 @@
 # display_defect_chatbot/.gitignore
 .env
+.env.local
 __pycache__/
 *.pyc
 *.class
@@ -10,3 +11,4 @@ dist/
 *.log
 uploads/
 bg_results/
+.vscode

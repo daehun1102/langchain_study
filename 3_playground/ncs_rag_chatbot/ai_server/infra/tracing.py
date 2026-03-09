@@ -15,7 +15,7 @@ import logging
 
 logger = logging.getLogger("ncs_tracing")
 
-PHOENIX_HOST = os.getenv("PHOENIX_HOST", "localhost")
+PHOENIX_HOST = os.getenv("PHOENIX_HOST")
 PHOENIX_GRPC_PORT = os.getenv("PHOENIX_GRPC_PORT", "4317")
 
 
@@ -28,6 +28,9 @@ def setup_tracing() -> bool:
         True: 트레이싱 활성화 성공
         False: 연결 실패 (서버는 계속 동작)
     """
+    if not PHOENIX_HOST:
+        return False
+
     try:
         from phoenix.otel import register
         from openinference.instrumentation.langchain import LangChainInstrumentor

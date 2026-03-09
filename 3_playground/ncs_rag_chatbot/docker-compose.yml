@@ -18,6 +18,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - ncs-network
 
   # ── Redis ──────────────────────────────────────────────────────────
   redis:
@@ -29,6 +31,8 @@ services:
       - "8001:8001"   # RedisInsight UI
     volumes:
       - redis_data:/data
+    networks:
+      - ncs-network
 
   # ── Arize Phoenix ──────────────────────────────────────────────────
   phoenix:
@@ -40,6 +44,64 @@ services:
       - "4317:4317"   # OTLP gRPC
     volumes:
       - phoenix_data:/phoenix/.phoenix
+    networks:
+      - ncs-network
+
+  # ── AI Server (FastAPI) ────────────────────────────────────────────
+  ai-server:
+    build:
+      context: .
+      dockerfile: ai_server/Dockerfile
+    container_name: ncs-ai-server
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks:
+      - ncs-network
+
+  # ── Backend (Spring Boot) ──────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: ncs-backend
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "8080:8080"
+    depends_on:
+      - redis
+      - ai-server
+    networks:
+      - ncs-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  # ── Frontend (Vue3 Vite dev) ───────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: ncs-frontend
+    restart: unless-stopped
+    ports:
+      - "5174:5174"
+    depends_on:
+      - backend
+    networks:
+      - ncs-network
+
+networks:
+  ncs-network:
+    driver: bridge
 
 volumes:
   postgres_data:

@@ -1,9 +1,13 @@
 # ai_server/infra/checkpointer.py
+from contextlib import asynccontextmanager
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 
 
-async def create_checkpointer(pg_url: str) -> AsyncPostgresSaver:
-    """AsyncPostgresSaver 생성 및 LangGraph 체크포인트 테이블 자동 초기화."""
-    checkpointer = AsyncPostgresSaver.from_conn_string(pg_url)
-    await checkpointer.setup()  # checkpoints, checkpoint_blobs, checkpoint_writes 테이블 자동 생성
-    return checkpointer
+@asynccontextmanager
+async def checkpointer_lifespan(pg_url: str):
+    """AsyncPostgresSaver 수명 관리 — lifespan 안에서 async with 로 사용.
+    진입 시 체크포인트 테이블을 자동 생성하고, 종료 시 연결을 정리합니다.
+    """
+    async with AsyncPostgresSaver.from_conn_string(pg_url) as checkpointer:
+        await checkpointer.setup()
+        yield checkpointer

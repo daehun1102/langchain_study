@@ -1,3 +1,5 @@
 backend/uploads/
 .worktrees/
 .claude/
+docs/
+scripts/

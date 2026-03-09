@@ -39,7 +39,7 @@ class VectorStoreManager:
             table_name=TABLE_NAME,
             vector_size=VECTOR_SIZE,
             metadata_columns=METADATA_COLUMNS,
-            overwrite_existing=False,
+            overwrite_existing=True,
         )
         vector_store = await PGVectorStore.create(
             engine=pg_engine,

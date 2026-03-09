@@ -1,0 +1,162 @@
+================================================================================
+  display_defect_chatbot  /  Mock 데이터 명세서
+================================================================================
+
+1. PRODUCTS (제품 마스터)
+────────────────────────────────────────────────────────────────────────────────
+product_id   model              panel_size  manufactured_at
+───────────  ─────────────────  ──────────  ───────────────
+LOT-A001     SDC-OLED-55A       55inch      2025-06-01
+LOT-A002     SDC-OLED-55A       55inch      2025-06-15
+LOT-A003     SDC-OLED-55A       55inch      2025-06-28
+LOT-B001     SDC-QLED-65B       65inch      2025-07-01
+LOT-B002     SDC-QLED-65B       65inch      2025-07-20
+LOT-C001     SDC-OLED-27C       27inch      2025-08-01
+LOT-C002     SDC-OLED-27C       27inch      2025-08-18
+LOT-D001     SDC-AMOLED-32D     32inch      2025-09-05
+LOT-D002     SDC-AMOLED-32D     32inch      2025-09-20
+
+
+2. DEFECT_CASES (불량 케이스)
+────────────────────────────────────────────────────────────────────────────────
+product_id  company  defect_type      description
+──────────  ───────  ───────────────  ─────────────────────────────────────────
+LOT-A001    A사       Dead Pixel       화면 좌측 상단 영역 픽셀 소등 불량 10개
+LOT-A002    B사       Hot Pixel        화면 중앙부 흰 점 불량 5개
+LOT-A003    C사       Line Defect      화면 하단 수평선 1줄 상시 점등 불량
+LOT-B001    A사       Cluster Defect   우측 하단 군집 불량 50x50px
+LOT-B002    D사       Mura Defect      전면 밝기 불균일 - 중앙부 밝고 주변부 어두운 현상
+LOT-C001    B사       Burn-in          장시간 정지화면 표시 후 잔상 발생
+LOT-C002    C사       Color Shift      sRGB 기준 녹색 채널 색좌표 이탈 (Δu'v' > 0.01)
+LOT-D001    E사       Touch Defect     우측 하단 터치 미감지 영역 20x30mm
+LOT-D002    A사       Dark Spot        화면 중앙 암점 불량 직경 3mm 이상 2개
+
+
+3. PROCESS_HISTORY (공정 이력)
+────────────────────────────────────────────────────────────────────────────────
+[LOT-A001]  불량 원인: Etch-Gate 공정 FAIL
+  CVD-Gate       EQ-CVD-01  OP-100  PASS  2025-06-01 08:00
+  Photo-Gate     EQ-PHT-02  OP-101  PASS  2025-06-01 10:00
+  Etch-Gate      EQ-ETH-01  OP-102  FAIL  2025-06-01 12:00  ← 불량 트리거
+  CVD-Active     EQ-CVD-01  OP-100  WARN  2025-06-01 14:00
+  Ion-Implant    EQ-ION-01  OP-103  PASS  2025-06-01 16:00
+
+[LOT-A002]  불량 원인: Cell-Align 공정 FAIL
+  CVD-Gate       EQ-CVD-02  OP-100  PASS  2025-06-15 08:00
+  Photo-Gate     EQ-PHT-02  OP-101  PASS  2025-06-15 10:00
+  Etch-Gate      EQ-ETH-02  OP-102  PASS  2025-06-15 12:00
+  Cell-Align     EQ-ALN-01  OP-104  FAIL  2025-06-15 14:00  ← 불량 트리거
+
+[LOT-A003]  불량 원인: Etch-SD FAIL + Final-Inspection FAIL
+  CVD-Gate       EQ-CVD-01  OP-100  PASS  2025-06-28 08:00
+  Photo-Gate     EQ-PHT-01  OP-101  PASS  2025-06-28 10:00
+  Etch-Gate      EQ-ETH-01  OP-102  PASS  2025-06-28 12:00
+  CVD-Active     EQ-CVD-02  OP-100  WARN  2025-06-28 14:00
+  Etch-SD        EQ-ETH-02  OP-105  FAIL  2025-06-28 16:00  ← 불량 트리거
+  Final-Insp.    EQ-INS-01  OP-106  FAIL  2025-06-29 09:00
+
+[LOT-B001]  불량 원인: Photo-Gate WARN (마스크 오염)
+  CVD-Gate       EQ-CVD-03  OP-100  PASS  2025-07-01 08:00
+  Photo-Gate     EQ-PHT-01  OP-101  WARN  2025-07-01 09:00  ← 불량 트리거
+  Etch-Gate      EQ-ETH-03  OP-102  PASS  2025-07-01 11:00
+
+[LOT-B002]  불량 원인: Photo-Active FAIL
+  CVD-Gate       EQ-CVD-03  OP-100  PASS  2025-07-20 08:00
+  Photo-Gate     EQ-PHT-02  OP-101  PASS  2025-07-20 10:00
+  Photo-Active   EQ-PHT-03  OP-104  FAIL  2025-07-20 13:00  ← 불량 트리거
+  Etch-SD        EQ-ETH-02  OP-105  WARN  2025-07-20 15:00
+
+[LOT-C001]  불량 원인: OLED-Depo FAIL
+  CVD-Gate       EQ-CVD-01  OP-100  PASS  2025-08-01 08:00
+  Photo-Gate     EQ-PHT-01  OP-101  PASS  2025-08-01 10:00
+  Etch-Gate      EQ-ETH-01  OP-102  PASS  2025-08-01 12:00
+  OLED-Depo      EQ-OLT-01  OP-107  FAIL  2025-08-02 08:00  ← 불량 트리거
+  Encap          EQ-ENC-01  OP-108  WARN  2025-08-02 11:00
+
+[LOT-C002]  불량 원인: Color-Filter FAIL
+  CVD-Gate       EQ-CVD-02  OP-100  PASS  2025-08-18 08:00
+  OLED-Depo      EQ-OLT-01  OP-107  WARN  2025-08-19 08:00
+  Color-Filter   EQ-CFT-01  OP-109  FAIL  2025-08-19 13:00  ← 불량 트리거
+
+[LOT-D001]  불량 원인: Touch-Pattern FAIL
+  CVD-Gate       EQ-CVD-01  OP-100  PASS  2025-09-05 08:00
+  OLED-Depo      EQ-OLT-02  OP-107  PASS  2025-09-06 08:00
+  Touch-Pattern  EQ-TCH-01  OP-110  FAIL  2025-09-06 14:00  ← 불량 트리거
+  Encap          EQ-ENC-01  OP-108  PASS  2025-09-07 09:00
+
+[LOT-D002]  불량 원인: OLED-Depo FAIL
+  CVD-Gate       EQ-CVD-02  OP-100  PASS  2025-09-20 08:00
+  OLED-Depo      EQ-OLT-01  OP-107  FAIL  2025-09-21 08:00  ← 불량 트리거
+  Dark-Current   EQ-DCT-01  OP-111  WARN  2025-09-21 14:00
+
+
+4. RETURN_HISTORY (반송 이력)
+────────────────────────────────────────────────────────────────────────────────
+product_id  return_date  qty   severity  return_reason
+──────────  ───────────  ────  ────────  ────────────────────────────────────────
+LOT-A001    2025-07-10    50   HIGH      픽셀 소등 불량 - TFT 불량 의심
+LOT-A001    2025-07-15    20   MEDIUM    화면 얼룩 - 공정 불량
+LOT-A002    2025-07-20    30   LOW       백라이트 불균일 - 셀 갭 불량
+LOT-A003    2025-08-01    45   MEDIUM    수평 라인 상시 점등 - Etch-SD 공정 이상
+LOT-B001    2025-08-05    80   HIGH      군집 픽셀 불량 - 마스크 오염 의심
+LOT-B002    2025-08-25    60   HIGH      화면 밝기 불균일 - Mura 불량
+LOT-C001    2025-09-10    35   HIGH      잔상 발생 - OLED 소자 열화
+LOT-C002    2025-09-22    25   MEDIUM    색감 이상 - 녹색 채널 색좌표 이탈
+LOT-D001    2025-10-08    40   HIGH      터치 미감지 - Touch 패턴 단선
+LOT-D002    2025-10-18    15   MEDIUM    암점 불량 - OLED 증착 이상
+
+
+5. TEST_RESULTS (테스트 결과)
+────────────────────────────────────────────────────────────────────────────────
+product_id  test_type         result  measured   spec_min   spec_max
+──────────  ────────────────  ──────  ─────────  ─────────  ─────────
+LOT-A001    Vth-Uniformity    FAIL    2.8        1.0        2.5
+LOT-A001    Ion/Ioff-Ratio    PASS    1,200,000  1,000,000  -
+LOT-A001    Mobility          WARN    0.45       0.5        1.5
+
+LOT-A002    Cell-Gap          FAIL    3.8        4.0        4.5
+LOT-A002    Vth-Uniformity    PASS    1.8        1.0        2.5
+LOT-A002    Ion/Ioff-Ratio    PASS    1,050,000  1,000,000  -
+
+LOT-A003    Vth-Uniformity    PASS    2.1        1.0        2.5
+LOT-A003    Mobility          FAIL    0.38       0.5        1.5
+LOT-A003    CD-Uniformity     WARN    98.5%      99.0%      101.0%
+
+LOT-B001    Particle-Count    FAIL    18         0          10
+LOT-B001    CD-Uniformity     WARN    98.2%      99.0%      101.0%
+LOT-B001    Vth-Uniformity    PASS    2.0        1.0        2.5
+
+LOT-B002    Particle-Count    WARN    12         0          10
+LOT-B002    CD-Uniformity     FAIL    97.1%      99.0%      101.0%
+LOT-B002    Ion/Ioff-Ratio    PASS    1,100,000  1,000,000  -
+
+LOT-C001    OLED-Luminance    FAIL    380 cd/m²  400        500
+LOT-C001    Color-Coordinate  PASS    0.003      0.0        0.01
+LOT-C001    Leakage-Current   WARN    0.08 nA    0.0        0.05
+
+LOT-C002    Color-Coordinate  FAIL    0.015      0.0        0.01
+LOT-C002    OLED-Luminance    WARN    395 cd/m²  400        500
+LOT-C002    Cell-Gap          PASS    4.2        4.0        4.5
+
+LOT-D001    Touch-Sensitivity FAIL    1.2 mm     2.0        5.0
+LOT-D001    Vth-Uniformity    PASS    2.0        1.0        2.5
+LOT-D001    Mobility          PASS    0.85       0.5        1.5
+
+LOT-D002    Dark-Current      FAIL    0.12 nA    0.0        0.05
+LOT-D002    OLED-Luminance    WARN    392 cd/m²  400        500
+LOT-D002    Ion/Ioff-Ratio    PASS    1,080,000  1,000,000  -
+
+
+================================================================================
+  시나리오 요약
+================================================================================
+LOT-A001  Dead Pixel    → Etch-Gate FAIL → Vth 이탈 → 다량 반송 (HIGH)
+LOT-A002  Hot Pixel     → Cell-Align FAIL → Cell-Gap 이탈 → 소량 반송 (LOW)
+LOT-A003  Line Defect   → Etch-SD FAIL → Mobility 저하 → 중간 반송 (MEDIUM)
+LOT-B001  Cluster Defect→ Photo-Gate WARN(파티클) → 군집 불량 → 대량 반송 (HIGH)
+LOT-B002  Mura Defect   → Photo-Active FAIL → CD 불균일 → 대량 반송 (HIGH)
+LOT-C001  Burn-in       → OLED-Depo FAIL → 휘도 저하 + 누설전류 → 반송 (HIGH)
+LOT-C002  Color Shift   → Color-Filter FAIL → 색좌표 이탈 → 반송 (MEDIUM)
+LOT-D001  Touch Defect  → Touch-Pattern FAIL → 감도 저하 → 반송 (HIGH)
+LOT-D002  Dark Spot     → OLED-Depo FAIL → 암전류 증가 → 반송 (MEDIUM)
+================================================================================

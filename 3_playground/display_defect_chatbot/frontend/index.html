@@ -2,10 +2,41 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <title>Display Defect Chatbot</title>
+  <title>Display Defect Analyzer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+KR:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <style>
+    :root {
+      --bg-base:    #070c14;
+      --bg-surface: #0d1421;
+      --bg-card:    #111927;
+      --border:     #1a2744;
+      --border-mid: #243556;
+      --ac-cyan:    #00c8ff;
+      --ac-amber:   #f59e0b;
+      --ac-emerald: #10b981;
+      --ac-violet:  #a78bfa;
+      --ac-red:     #f87171;
+      --text-1:     #e2e8f0;
+      --text-2:     #94a3b8;
+      --text-3:     #475569;
+      --mono:       'IBM Plex Mono', 'Courier New', monospace;
+      --sans:       'IBM Plex Sans KR', 'Segoe UI', sans-serif;
+    }
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Segoe UI', sans-serif; background: #0f1117; color: #e0e0e0; }
+    body {
+      font-family: var(--sans);
+      background: var(--bg-base);
+      color: var(--text-1);
+      -webkit-font-smoothing: antialiased;
+    }
+    html, body { height: 100%; overflow: hidden; }
+    #app { height: 100%; }
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border-mid); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #2e4268; }
   </style>
 </head>
 <body>

@@ -21,18 +21,6 @@ services:
     networks:
       - defect-network
 
-  phoenix:
-    image: arizephoenix/phoenix:latest
-    container_name: defect-phoenix
-    restart: unless-stopped
-    ports:
-      - "6007:6006"
-      - "4318:4317"
-    volumes:
-      - phoenix_data:/phoenix/.phoenix
-    networks:
-      - defect-network
-
   ai-server:
     build:
       context: .
@@ -46,8 +34,6 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      phoenix:
-        condition: service_started
     networks:
       - defect-network
 
@@ -90,4 +76,3 @@ networks:
 
 volumes:
   postgres_data:
-  phoenix_data:

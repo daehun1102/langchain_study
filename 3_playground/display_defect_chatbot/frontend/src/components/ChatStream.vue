@@ -7,52 +7,59 @@
     </div>
 
     <div class="bubbles-wrap">
-      <div
-        v-for="msg in messages"
-        :key="msg.id"
-        class="chat-bubble"
-        :style="{ '--ac': agentColor(msg.agentKey) }"
-      >
-        <div class="bubble-header">
-          <span class="agent-dot">{{ agentIcon(msg.agentKey) }}</span>
-          <span class="agent-name">{{ agentLabel(msg.agentKey) }}</span>
-
-          <span v-if="msg.status === 'loading'" class="status-loading" aria-label="분석 중">
-            <span></span><span></span><span></span>
-          </span>
-          <span v-else-if="msg.status === 'done'" class="status-badge done">완료</span>
-          <span v-else-if="msg.status === 'error'" class="status-badge error">오류</span>
+      <template v-for="msg in messages" :key="msg.id">
+        <!-- 사용자 입력 메시지 -->
+        <div v-if="msg.agentKey === 'user'" class="user-bubble">
+          <span class="user-bubble-text">{{ msg.userText }}</span>
         </div>
 
-        <div v-if="msg.status === 'loading'" class="bubble-body loading-body">
-          <span class="loading-text">데이터 분석 중</span>
-          <span class="loading-dots"><span></span><span></span><span></span></span>
-        </div>
+        <!-- 에이전트 결과 메시지 -->
+        <div
+          v-else
+          class="chat-bubble"
+          :style="{ '--ac': agentColor(msg.agentKey) }"
+        >
+          <div class="bubble-header">
+            <span class="agent-dot">{{ agentIcon(msg.agentKey) }}</span>
+            <span class="agent-name">{{ agentLabel(msg.agentKey) }}</span>
 
-        <div v-else-if="msg.status === 'done' && msg.result" class="bubble-body">
-          <p class="analysis-text">{{ msg.result.analysis }}</p>
+            <span v-if="msg.status === 'loading'" class="status-loading" aria-label="분석 중">
+              <span></span><span></span><span></span>
+            </span>
+            <span v-else-if="msg.status === 'done'" class="status-badge done">완료</span>
+            <span v-else-if="msg.status === 'error'" class="status-badge error">오류</span>
+          </div>
 
-          <template v-if="msg.result.suspectRows?.length">
-            <div class="grid-header">
-              <span class="grid-label">의심 데이터</span>
-              <span class="grid-count">{{ msg.result.suspectRows.length }}건</span>
-            </div>
-            <AgGridVue
-              class="ag-theme-quartz-dark grid-box"
-              :rowData="msg.result.suspectRows"
-              :columnDefs="getColDefs(msg.agentKey)"
-              :defaultColDef="defaultColDef"
-              domLayout="autoHeight"
-            />
-          </template>
-          <p v-else class="no-data">의심 데이터 없음</p>
-        </div>
+          <div v-if="msg.status === 'loading'" class="bubble-body loading-body">
+            <span class="loading-text">데이터 분석 중</span>
+            <span class="loading-dots"><span></span><span></span><span></span></span>
+          </div>
 
-        <div v-else-if="msg.status === 'error'" class="bubble-body error-body">
-          <span class="error-badge">!</span>
-          분석 중 오류가 발생했습니다.
+          <div v-else-if="msg.status === 'done' && msg.result" class="bubble-body">
+            <p class="analysis-text">{{ msg.result.analysis }}</p>
+
+            <template v-if="msg.result.suspectRows?.length">
+              <div class="grid-header">
+                <span class="grid-label">의심 데이터</span>
+                <span class="grid-count">{{ msg.result.suspectRows.length }}건</span>
+              </div>
+              <AgGridVue
+                class="ag-theme-quartz-dark grid-box"
+                :rowData="msg.result.suspectRows"
+                :columnDefs="getColDefs(msg.agentKey)"
+                :defaultColDef="defaultColDef"
+                domLayout="autoHeight"
+              />
+            </template>
+            <p v-else class="no-data">의심 데이터 없음</p>
+          </div>
+
+          <div v-else-if="msg.status === 'error'" class="bubble-body error-body">
+            <span class="error-badge">!</span>
+            분석 중 오류가 발생했습니다.
+          </div>
         </div>
-      </div>
+      </template>
     </div>
   </div>
 </template>
@@ -127,8 +134,6 @@ function agentColor(agentKey) { return AGENT_COLORS[agentKey] || '#60a5fa' }
   flex: 1;
   overflow-y: auto;
   padding: 20px;
-  display: flex;
-  flex-direction: column;
 }
 
 .chat-empty {
@@ -136,7 +141,7 @@ function agentColor(agentKey) { return AGENT_COLORS[agentKey] || '#60a5fa' }
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  flex: 1;
+  min-height: 100%;
   padding: 60px 20px;
   text-align: center;
   gap: 8px;
@@ -164,6 +169,7 @@ function agentColor(agentKey) { return AGENT_COLORS[agentKey] || '#60a5fa' }
   display: flex;
   flex-direction: column;
   gap: 12px;
+  align-items: stretch;
 }
 
 .chat-bubble {
@@ -343,5 +349,23 @@ function agentColor(agentKey) { return AGENT_COLORS[agentKey] || '#60a5fa' }
   font-size: 0.68rem;
   font-weight: 700;
   flex-shrink: 0;
+}
+
+.user-bubble {
+  align-self: flex-end;
+  max-width: 72%;
+  background: rgba(0, 200, 255, 0.08);
+  border: 1px solid rgba(0, 200, 255, 0.2);
+  border-radius: 12px 12px 2px 12px;
+  padding: 9px 14px;
+  animation: bubbleIn 0.22s ease;
+}
+
+.user-bubble-text {
+  font-size: 0.84rem;
+  color: #c8eeff;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 </style>

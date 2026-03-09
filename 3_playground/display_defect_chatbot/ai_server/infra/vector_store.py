@@ -30,8 +30,9 @@ class VectorStoreManager:
                 metadata_columns=METADATA_COLUMNS,
                 overwrite_existing=False,
             )
-        except ProgrammingError:
-            pass  # Table already exists, skip creation
+        except ProgrammingError as e:
+            if "already exists" not in str(e.orig or e):
+                raise
         vector_store = await PGVectorStore.create(
             engine=pg_engine,
             table_name=TABLE_NAME,
