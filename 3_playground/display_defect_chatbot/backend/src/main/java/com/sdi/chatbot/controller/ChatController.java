@@ -1,6 +1,7 @@
 package com.sdi.chatbot.controller;
 
-import com.sdi.chatbot.dto.*;
+import com.sdi.chatbot.dto.AgentRequest;
+import com.sdi.chatbot.dto.AgentResponse;
 import com.sdi.chatbot.service.ChatService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -13,13 +14,13 @@ public class ChatController {
 
     private final ChatService chatService;
 
-    @PostMapping("/analyze")
-    public ResponseEntity<AnalyzeResponse> analyze(@RequestBody AnalyzeRequest request) {
-        return ResponseEntity.ok(chatService.analyze(request));
+    @PostMapping("/agent")
+    public ResponseEntity<AgentResponse> agent(@RequestBody AgentRequest request) {
+        return ResponseEntity.ok(chatService.agent(request));
     }
 
-    @PostMapping("/investigate")
-    public ResponseEntity<InvestigateResponse> investigate(@RequestBody InvestigateRequest request) {
-        return ResponseEntity.ok(chatService.investigate(request));
+    @GetMapping("/bg-status/{taskId}")
+    public ResponseEntity<Object> getBgStatus(@PathVariable String taskId) {
+        return ResponseEntity.ok(chatService.getBgStatus(taskId));
     }
 }

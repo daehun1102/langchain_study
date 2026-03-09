@@ -1,6 +1,7 @@
 package com.sdi.chatbot.service;
 
-import com.sdi.chatbot.dto.*;
+import com.sdi.chatbot.dto.AgentRequest;
+import com.sdi.chatbot.dto.AgentResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
@@ -11,20 +12,12 @@ public class ChatService {
 
     private final RestClient aiRestClient;
 
-    public AnalyzeResponse analyze(AnalyzeRequest request) {
+    public AgentResponse agent(AgentRequest request) {
         return aiRestClient.post()
-                .uri("/internal/analyze")
+                .uri("/internal/agent")
                 .body(request)
                 .retrieve()
-                .body(AnalyzeResponse.class);
-    }
-
-    public InvestigateResponse investigate(InvestigateRequest request) {
-        return aiRestClient.post()
-                .uri("/internal/investigate")
-                .body(request)
-                .retrieve()
-                .body(InvestigateResponse.class);
+                .body(AgentResponse.class);
     }
 
     public Object getBgStatus(String taskId) {
