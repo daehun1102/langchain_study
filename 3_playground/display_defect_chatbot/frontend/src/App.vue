@@ -48,25 +48,30 @@
           </div>
           <ChatStream :messages="chatMessages" />
           <div class="chat-input-bar">
-            <textarea
-              v-model="userInput"
-              class="chat-input"
-              placeholder="결과에 대해 추가 질문을 입력하세요… (Enter로 전송)"
-              rows="1"
-              @keydown.enter.exact.prevent="sendUserMessage"
-              @input="autoResize"
-              ref="chatInputEl"
-            ></textarea>
-            <button
-              class="chat-send-btn"
-              :disabled="!userInput.trim() || loading"
-              @click="sendUserMessage"
-              title="전송"
-            >
-              <svg viewBox="0 0 16 16" fill="none" width="15" height="15">
-                <path d="M14 8L2 2l3 6-3 6 12-6z" fill="currentColor"/>
-              </svg>
-            </button>
+            <div v-if="isChatBlocked" class="chat-blocked-notice">
+              ⏳ 장기 이력 분석 완료 후 채팅이 가능합니다
+            </div>
+            <template v-else>
+              <textarea
+                v-model="userInput"
+                class="chat-input"
+                placeholder="결과에 대해 추가 질문을 입력하세요… (Enter로 전송)"
+                rows="1"
+                @keydown.enter.exact.prevent="sendUserMessage"
+                @input="autoResize"
+                ref="chatInputEl"
+              ></textarea>
+              <button
+                class="chat-send-btn"
+                :disabled="!userInput.trim() || loading"
+                @click="sendUserMessage"
+                title="전송"
+              >
+                <svg viewBox="0 0 16 16" fill="none" width="15" height="15">
+                  <path d="M14 8L2 2l3 6-3 6 12-6z" fill="currentColor"/>
+                </svg>
+              </button>
+            </template>
           </div>
         </template>
       </main>
@@ -87,6 +92,7 @@ const {
   chatMessages,
   sessions, activeSessionId,
   enabledAgents,
+  isChatBlocked,
   startAnalysis, selectHypothesis, runAgents, toggleAgent,
   newAnalysis, loadSession, deleteSession,
   userInput, sendUserMessage,
@@ -218,4 +224,13 @@ body { background: #0f1117; color: #e0e0e0; font-family: 'Segoe UI', sans-serif;
 }
 
 .chat-send-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+.chat-blocked-notice {
+  flex: 1;
+  text-align: center;
+  color: #6b7280;
+  font-size: 0.82rem;
+  padding: 10px 0;
+  font-style: italic;
+}
 </style>
