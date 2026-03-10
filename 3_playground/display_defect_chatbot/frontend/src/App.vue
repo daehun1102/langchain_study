@@ -4,6 +4,15 @@
     <header class="header">
       <h1>🔬 Display Defect Analyzer</h1>
       <span class="subtitle">삼성 디스플레이 픽셀 불량 분석 AI</span>
+      <div class="email-setting">
+        <label class="email-label">📧 알림 이메일</label>
+        <input
+          v-model="userEmail"
+          type="email"
+          class="email-input"
+          placeholder="완료 알림 받을 이메일"
+        />
+      </div>
     </header>
 
     <div class="body">
@@ -93,6 +102,7 @@ const {
   sessions, activeSessionId,
   enabledAgents,
   isChatBlocked,
+  userEmail,
   startAnalysis, selectHypothesis, runAgents, toggleAgent,
   newAnalysis, loadSession, deleteSession,
   userInput, sendUserMessage,
@@ -233,4 +243,28 @@ body { background: #0f1117; color: #e0e0e0; font-family: 'Segoe UI', sans-serif;
   padding: 10px 0;
   font-style: italic;
 }
+
+.email-setting {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+.email-label {
+  color: #6b7280;
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+.email-input {
+  background: #1a1d27;
+  border: 1px solid #2a2d3a;
+  border-radius: 6px;
+  padding: 5px 10px;
+  color: #e0e0e0;
+  font-size: 0.78rem;
+  width: 200px;
+  outline: none;
+}
+.email-input:focus { border-color: #00c8ff; }
+.email-input::placeholder { color: #374151; }
 </style>
