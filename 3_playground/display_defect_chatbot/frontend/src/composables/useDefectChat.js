@@ -124,6 +124,9 @@ export function useDefectChat() {
 
   // --- 세션 불러오기 (왼쪽 패널 클릭 시) ---
   function loadSession(session) {
+    // 다른 세션으로 전환 시 기존 폴링 즉시 중단 (세션 간 격리 핵심)
+    if (pollTimer.value) { clearInterval(pollTimer.value); pollTimer.value = null }
+
     activeSessionId.value = session.id
     sessionId.value = session.id
     form.productId = session.productId
@@ -132,9 +135,15 @@ export function useDefectChat() {
     chatMessages.value = session.chatMessages || []
     Object.assign(agentResults, session.agentResults)
     if (session.enabledAgents) Object.assign(enabledAgents, session.enabledAgents)
+    longTermTaskId.value = session.longTermTaskId || null
     longTermStatus.value = session.longTermStatus || 'PENDING'
     longTermResult.value = session.longTermResult || null
     step.value = 'result'
+
+    // PENDING + taskId 있으면 즉시 체크 후 필요 시 폴링 재개
+    if (longTermTaskId.value && longTermStatus.value === 'PENDING') {
+      resumePollBgStatus(longTermTaskId.value)
+    }
   }
 
   // --- 새 분석 시작 ---
