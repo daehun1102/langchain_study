@@ -243,30 +243,35 @@ export function useDefectChat() {
     }
   }
 
+  async function checkAndHandleBgStatus(taskId) {
+    const data = await getBgStatus(taskId)
+    longTermStatus.value = data.status
+
+    if (data.status === 'COMPLETED' || data.status === 'FAILED') {
+      if (pollTimer.value) { clearInterval(pollTimer.value); pollTimer.value = null }
+      longTermResult.value = data.resultText
+
+      if (data.status === 'COMPLETED') {
+        const response = await callAgent({
+          sessionId: sessionId.value,
+          action: 'resume_long_term',
+          longTermResult: data.resultText || '',
+        })
+        const r = { suspectRows: [], analysis: data.resultText || '' }
+        agentResults['long_term'] = r
+        _updateMessage('long_term', 'done', r)
+        finalActionPlan.value = response.finalActionPlan || ''
+      } else {
+        _updateMessage('long_term', 'error', null)
+      }
+      saveCurrentSession()
+    }
+  }
+
   function pollBgStatus(taskId) {
     pollTimer.value = setInterval(async () => {
       try {
-        const data = await getBgStatus(taskId)
-        longTermStatus.value = data.status
-        if (data.status === 'COMPLETED' || data.status === 'FAILED') {
-          clearInterval(pollTimer.value); pollTimer.value = null
-          longTermResult.value = data.resultText
-
-          if (data.status === 'COMPLETED') {
-            const response = await callAgent({
-              sessionId: sessionId.value,
-              action: 'resume_long_term',
-              longTermResult: data.resultText || '',
-            })
-            const r = { suspectRows: [], analysis: data.resultText || '' }
-            agentResults['long_term'] = r
-            _updateMessage('long_term', 'done', r)
-            finalActionPlan.value = response.finalActionPlan || ''
-          } else {
-            _updateMessage('long_term', 'error', null)
-          }
-          saveCurrentSession()
-        }
+        await checkAndHandleBgStatus(taskId)
       } catch (e) {
         clearInterval(pollTimer.value); pollTimer.value = null
       }
