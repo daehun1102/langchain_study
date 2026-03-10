@@ -279,6 +279,8 @@ export function useDefectChat() {
   }
 
   async function resumePollBgStatus(taskId) {
+    const capturedSessionId = sessionId.value  // 세션 전환 감지용 스냅샷
+
     // 메시지 카드 없으면 loading 카드 복원
     const hasCard = chatMessages.value.some(m => m.agentKey === 'long_term')
     if (!hasCard) {
@@ -287,9 +289,11 @@ export function useDefectChat() {
     // 즉시 1회 체크 — 이미 완료됐을 수 있음
     try {
       await checkAndHandleBgStatus(taskId)
-    } catch (_) {}
-    // 아직 PENDING이면 인터벌 시작
-    if (longTermStatus.value === 'PENDING') {
+    } catch (e) {
+      console.warn('[resumePollBgStatus] 즉시 체크 실패:', e)
+    }
+    // await 동안 세션이 바뀌었거나 이미 완료됐으면 인터벌 시작 안 함
+    if (sessionId.value === capturedSessionId && longTermStatus.value === 'PENDING') {
       pollBgStatus(taskId)
     }
   }
