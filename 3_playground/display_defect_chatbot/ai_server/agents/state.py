@@ -17,6 +17,19 @@ class AgentOutputSchema(BaseModel):
     analysis: str = Field(description="에이전트 분석 결과 텍스트 2-3문장")
 
 
+class HypothesisItem(BaseModel):
+    """가설 하나와 추천 에이전트 목록"""
+    text: str = Field(description="가설 텍스트")
+    recommended_agents: list[str] = Field(
+        description="추천 에이전트 목록. 유효값: process_history, return_history, test_result, long_term"
+    )
+
+
+class HypothesesResponse(BaseModel):
+    """hypothesis_node structured output 스키마"""
+    hypotheses: list[HypothesisItem]
+
+
 class SubAgentInput(TypedDict):
     """Send API로 서브에이전트에 전달되는 입력 전용 상태"""
     company: str
@@ -45,7 +58,7 @@ class DefectAnalysisState(TypedDict):
     notify_email: Optional[str]
 
     # ── 가설 단계 ────────────────────────────
-    hypotheses: list[str]
+    hypotheses: list[dict]  # [{"text": str, "recommended_agents": list[str]}]
     selected_hypothesis: str
 
     # ── 에이전트 결과 (reducer: 최신값으로 교체) ──
