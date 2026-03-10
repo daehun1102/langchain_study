@@ -36,7 +36,7 @@
           </div>
 
           <div v-else-if="msg.status === 'done' && msg.result" class="bubble-body">
-            <p class="analysis-text">{{ msg.result.analysis }}</p>
+            <div class="analysis-text" v-html="renderMarkdown(msg.result.analysis)"></div>
 
             <template v-if="msg.result.suspectRows?.length">
               <div class="grid-header">
@@ -68,7 +68,14 @@
 import { ref, watch, nextTick } from 'vue'
 import { AgGridVue } from 'ag-grid-vue3'
 import { ModuleRegistry, AllCommunityModule } from 'ag-grid-community'
+import { marked } from 'marked'
 import { AGENT_CONFIG } from '../composables/useDefectChat.js'
+
+marked.setOptions({ breaks: true })
+function renderMarkdown(text) {
+  if (!text) return ''
+  return marked.parse(String(text))
+}
 
 ModuleRegistry.registerModules([AllCommunityModule])
 
@@ -289,7 +296,81 @@ function agentColor(agentKey) { return AGENT_COLORS[agentKey] || '#60a5fa' }
   color: var(--text-2);
   line-height: 1.8;
   margin-bottom: 14px;
-  white-space: pre-wrap;
+}
+
+.analysis-text :deep(p) { margin-bottom: 8px; }
+.analysis-text :deep(p:last-child) { margin-bottom: 0; }
+.analysis-text :deep(h1),
+.analysis-text :deep(h2),
+.analysis-text :deep(h3) {
+  color: var(--text-1);
+  font-weight: 600;
+  margin: 12px 0 6px;
+  line-height: 1.4;
+}
+.analysis-text :deep(h1) { font-size: 1rem; }
+.analysis-text :deep(h2) { font-size: 0.92rem; }
+.analysis-text :deep(h3) { font-size: 0.86rem; }
+.analysis-text :deep(ul),
+.analysis-text :deep(ol) {
+  padding-left: 1.4em;
+  margin-bottom: 8px;
+}
+.analysis-text :deep(li) { margin-bottom: 3px; }
+.analysis-text :deep(strong) { color: var(--text-1); font-weight: 700; }
+.analysis-text :deep(em) { color: var(--text-2); font-style: italic; }
+.analysis-text :deep(code) {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 3px;
+  padding: 1px 5px;
+  font-family: var(--mono);
+  font-size: 0.82em;
+  color: #7dd3fc;
+}
+.analysis-text :deep(pre) {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  padding: 10px 14px;
+  overflow-x: auto;
+  margin-bottom: 8px;
+}
+.analysis-text :deep(pre code) {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 0.8rem;
+  color: #94a3b8;
+}
+.analysis-text :deep(blockquote) {
+  border-left: 3px solid var(--border-mid);
+  padding-left: 12px;
+  margin: 8px 0;
+  color: var(--text-3);
+  font-style: italic;
+}
+.analysis-text :deep(hr) {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 10px 0;
+}
+.analysis-text :deep(table) {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+  margin-bottom: 8px;
+}
+.analysis-text :deep(th),
+.analysis-text :deep(td) {
+  border: 1px solid var(--border);
+  padding: 5px 10px;
+  text-align: left;
+}
+.analysis-text :deep(th) {
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-1);
+  font-weight: 600;
 }
 
 .grid-header {

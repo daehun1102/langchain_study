@@ -12,7 +12,11 @@
           type="email"
           class="email-input"
           placeholder="완료 알림 받을 이메일"
+          @keydown.enter="saveEmail"
         />
+        <button class="email-save-btn" @click="saveEmail" :class="{ saved: emailSaved }">
+          {{ emailSaved ? '✓ 저장됨' : '저장' }}
+        </button>
       </div>
     </header>
 
@@ -47,6 +51,7 @@
             :loading="loading"
             @toggle="toggleAgent"
             @run-all="runAgents"
+            @back="goBackToHypotheses"
           />
         </div>
 
@@ -90,6 +95,7 @@
 </template>
 
 <script setup>
+import { ref, computed } from 'vue'
 import { useDefectChat } from './composables/useDefectChat.js'
 import LeftPanel from './components/LeftPanel.vue'
 import InputView from './components/InputView.vue'
@@ -104,10 +110,20 @@ const {
   enabledAgents,
   isChatBlocked,
   userEmail,
-  startAnalysis, selectHypothesis, runAgents, toggleAgent,
+  startAnalysis, selectHypothesis, goBackToHypotheses, runAgents, toggleAgent,
   newAnalysis, loadSession, deleteSession,
   userInput, sendUserMessage,
 } = useDefectChat()
+
+// 저장된 이메일과 현재 입력값 비교로 저장 상태 표시
+const savedEmailValue = ref(localStorage.getItem('user_email') || '')
+const emailSaved = computed(() => !!userEmail.value && userEmail.value === savedEmailValue.value)
+
+function saveEmail() {
+  savedEmailValue.value = userEmail.value
+  try { localStorage.setItem('user_email', userEmail.value || '') } catch (_) {}
+}
+
 
 function autoResize(e) {
   const el = e.target
@@ -268,4 +284,18 @@ body { background: #0f1117; color: #e0e0e0; font-family: 'Segoe UI', sans-serif;
 }
 .email-input:focus { border-color: #00c8ff; }
 .email-input::placeholder { color: #374151; }
+
+.email-save-btn {
+  background: #1e293b;
+  color: #94a3b8;
+  border: 1px solid #2a2d3a;
+  border-radius: 6px;
+  padding: 5px 10px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.18s, color 0.18s, border-color 0.18s;
+}
+.email-save-btn:hover { background: #2a3a52; color: #e0e0e0; border-color: #3b4a5c; }
+.email-save-btn.saved { background: rgba(16, 185, 129, 0.12); color: #4ade80; border-color: rgba(16, 185, 129, 0.3); }
 </style>

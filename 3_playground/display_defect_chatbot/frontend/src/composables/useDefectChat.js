@@ -201,6 +201,10 @@ export function useDefectChat() {
     step.value = 'agent_select'
   }
 
+  function goBackToHypotheses() {
+    step.value = 'hypotheses'
+  }
+
   async function runAgents() {
     step.value = 'result'
     loading.value = true
@@ -331,7 +335,7 @@ export function useDefectChat() {
     userInput, sendUserMessage,
     userEmail,
     sessions, activeSessionId,
-    startAnalysis, selectHypothesis, runAgents, toggleAgent,
+    startAnalysis, selectHypothesis, goBackToHypotheses, runAgents, toggleAgent,
     saveCurrentSession, deleteSession, loadSession, newAnalysis, reset,
   }
 }

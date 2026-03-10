@@ -32,17 +32,22 @@
       </button>
     </div>
 
-    <button
-      class="btn-run"
-      :disabled="loading || enabledCount === 0"
-      @click="$emit('run-all')"
-    >
+    <div class="action-row">
+      <button class="btn-back" :disabled="loading" @click="$emit('back')">
+        ← 가설 다시 선택
+      </button>
+      <button
+        class="btn-run"
+        :disabled="loading || enabledCount === 0"
+        @click="$emit('run-all')"
+      >
       <span v-if="loading" class="run-spinner"></span>
       <svg v-else viewBox="0 0 16 16" fill="currentColor" width="15" height="15">
         <path d="M5 3.5a.5.5 0 01.763-.424l8 4.5a.5.5 0 010 .848l-8 4.5A.5.5 0 015 12.5v-9z"/>
       </svg>
-      {{ loading ? '분석 실행 중...' : `선택된 에이전트 실행 (${enabledCount}개)` }}
-    </button>
+        {{ loading ? '분석 실행 중...' : `선택된 에이전트 실행 (${enabledCount}개)` }}
+      </button>
+    </div>
   </div>
 </template>
 
@@ -51,7 +56,7 @@ import { computed } from 'vue'
 import { AGENT_CONFIG } from '../composables/useDefectChat.js'
 
 const props = defineProps(['hypothesis', 'enabledAgents', 'loading'])
-defineEmits(['toggle', 'run-all'])
+defineEmits(['toggle', 'run-all', 'back'])
 
 const agents = AGENT_CONFIG
 const enabledCount = computed(() => Object.values(props.enabledAgents).filter(Boolean).length)
@@ -230,8 +235,39 @@ h2 {
 
 .agent-card.active .agent-desc { color: var(--text-2); }
 
+.action-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.btn-back {
+  flex-shrink: 0;
+  background: transparent;
+  color: var(--text-3);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 13px 16px;
+  font-family: var(--sans);
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color 0.18s, border-color 0.18s;
+  white-space: nowrap;
+}
+
+.btn-back:hover:not(:disabled) {
+  color: var(--text-1);
+  border-color: var(--text-3);
+}
+
+.btn-back:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
 .btn-run {
-  width: 100%;
+  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
