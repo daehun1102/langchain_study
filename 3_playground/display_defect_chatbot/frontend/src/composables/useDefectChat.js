@@ -102,6 +102,7 @@ export function useDefectChat() {
       agentResults: JSON.parse(JSON.stringify(agentResults)),
       chatMessages: JSON.parse(JSON.stringify(chatMessages.value)),
       enabledAgents: { ...enabledAgents },
+      longTermTaskId: longTermTaskId.value,   // ← add this line
       longTermStatus: longTermStatus.value,
       longTermResult: longTermResult.value,
     }
