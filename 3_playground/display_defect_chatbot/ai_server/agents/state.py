@@ -24,6 +24,7 @@ class SubAgentInput(TypedDict):
     product_id: str
     selected_hypothesis: str
     session_id: str
+    notify_email: Optional[str]
 
 
 class AgentAnalysisResult(TypedDict):
@@ -41,6 +42,7 @@ class DefectAnalysisState(TypedDict):
     product_id: str
     session_id: str
     enabled_agents: list[str]
+    notify_email: Optional[str]
 
     # ── 가설 단계 ────────────────────────────
     hypotheses: list[str]

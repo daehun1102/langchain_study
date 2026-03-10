@@ -83,6 +83,8 @@ async def hypothesis_node(state: DefectAnalysisState, config: RunnableConfig) ->
     result: dict = {"hypotheses": hypotheses, "selected_hypothesis": selected}
     if enabled is not None:
         result["enabled_agents"] = enabled
+    if isinstance(resume, dict) and resume.get("notify_email") is not None:
+        result["notify_email"] = resume["notify_email"]
     return result
 
 
