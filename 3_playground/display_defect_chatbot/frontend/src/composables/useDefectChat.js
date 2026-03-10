@@ -149,6 +149,7 @@ export function useDefectChat() {
   // --- 새 분석 시작 ---
   function newAnalysis() {
     if (pollTimer.value) { clearInterval(pollTimer.value); pollTimer.value = null }
+    longTermTaskId.value = null   // ← add this line
     sessionId.value = uuidv4()
     activeSessionId.value = null
     step.value = 'input'
