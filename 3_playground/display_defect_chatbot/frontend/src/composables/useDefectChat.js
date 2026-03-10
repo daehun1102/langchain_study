@@ -22,6 +22,7 @@ export function useDefectChat() {
   const loading = ref(false)
   const error = ref(null)
   const pollTimer = ref(null)
+  const longTermTaskId = ref(null)
 
   const form = reactive({
     company: 'SDC',
@@ -209,6 +210,7 @@ export function useDefectChat() {
       }
 
       if (data.longTermTaskId) {
+        longTermTaskId.value = data.longTermTaskId
         pollBgStatus(data.longTermTaskId)
       } else {
         // 장기이력 미실행: 즉시 resume → final synthesis 트리거
