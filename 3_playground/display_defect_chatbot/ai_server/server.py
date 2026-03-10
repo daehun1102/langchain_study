@@ -47,6 +47,7 @@ class AgentRequest(BaseModel):
     selected_hypothesis: Optional[str] = None
     long_term_result: Optional[str] = None
     user_message: Optional[str] = None
+    notify_email: Optional[str] = None
 
     @field_validator("company", "defect_description", "product_id", mode="before")
     @classmethod
@@ -126,6 +127,7 @@ async def agent_endpoint(req: AgentRequest, request: Request):
             "product_id": req.product_id,
             "session_id": req.session_id,
             "enabled_agents": req.enabled_agents,
+            "notify_email": None,
             "hypotheses": [],
             "selected_hypothesis": "",
             "process_history_result": None,
@@ -144,6 +146,7 @@ async def agent_endpoint(req: AgentRequest, request: Request):
             resume_value = {
                 "selected_hypothesis": req.selected_hypothesis,
                 "enabled_agents": req.enabled_agents,
+                "notify_email": req.notify_email,
             }
         elif req.action == "resume_long_term":
             resume_value = req.long_term_result
