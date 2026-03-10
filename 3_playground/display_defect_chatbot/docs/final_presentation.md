@@ -90,8 +90,8 @@ flowchart TD
     START([시작]) --> A
 
     subgraph SEQ1["① 순차 단계: 가설 생성"]
-        A["가설 생성 노드\n(RAG + LLM)"]
-        A --> INT1{{"interrupt()\n가설 목록 반환"}}
+        A["가설 생성 노드<br>(RAG + LLM)"]
+        A --> INT1{{"interrupt()<br>가설 목록 반환"}}
         INT1 --> A2["사용자 가설 선택"]
     end
 
@@ -99,23 +99,23 @@ flowchart TD
 
     subgraph PAR["② 병렬 단계: 이력 분석 (Send API Fan-out)"]
         B["route_to_agents"]
-        B --> C1["공정 이력 분석\nprocess_history_node"]
-        B --> C2["반품 이력 분석\nreturn_history_node"]
-        B --> C3["검사 결과 분석\ntest_result_node"]
-        B --> C4["장기 이력 분석\nlong_term_node\n★ 백그라운드 실행"]
+        B --> C1["공정 이력 분석<br>process_history_node"]
+        B --> C2["반품 이력 분석<br>return_history_node"]
+        B --> C3["검사 결과 분석<br>test_result_node"]
+        B --> C4["장기 이력 분석<br>long_term_node<br>★ 백그라운드 실행"]
     end
 
     subgraph JOIN["③ 합류 단계: 결과 통합"]
-        C1 --> D["await_long_term_node\n(Fan-in)"]
+        C1 --> D["await_long_term_node<br>(Fan-in)"]
         C2 --> D
         C3 --> D
         C4 --> D
-        D --> INT2{{"interrupt()\n동기 결과 + task_id 반환"}}
+        D --> INT2{{"interrupt()<br>동기 결과 + task_id 반환"}}
     end
 
-    INT2 --> F["④ 순차 단계: 종합 조치안 생성\nfinal_synthesis_node"]
+    INT2 --> F["④ 순차 단계: 종합 조치안 생성<br>final_synthesis_node"]
 
-    F --> G["⑤ 순차 단계: Q&A 대화\nchat_node"]
+    F --> G["⑤ 순차 단계: Q&A 대화<br>chat_node"]
     G --> G
     G --> END([종료])
 ```
@@ -238,7 +238,7 @@ flowchart LR
     end
 
     subgraph B["StateGraph ✅"]
-        B1["process_history_node"] --> B4["await_long_term_node\n(join)"]
+        B1["process_history_node"] --> B4["await_long_term_node<br>(join)"]
         B2["return_history_node"] --> B4
         B3["test_result_node"] --> B4
         B5["long_term_node"] --> B4
