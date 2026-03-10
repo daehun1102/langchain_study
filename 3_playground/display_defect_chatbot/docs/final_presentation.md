@@ -292,39 +292,47 @@ sequenceDiagram
     participant AI as AI Server (LangGraph)
     participant DB as PostgreSQL
 
-    FE->>AI: POST /agent { action: "select_hypothesis" }
-
-    Note over AI: long_term_node 실행
-    AI->>DB: INSERT background_tasks (status=PENDING)
-    AI->>AI: asyncio.create_task() 백그라운드 실행 후 즉시 반환
-    Note over AI: await_long_term_node → interrupt()
-
-    AI-->>FE: { longTermTaskId: "abc...", agentResults: {...} }
-
-    loop Polling (3초마다)
-        FE->>AI: GET /bg-status/abc...
-        AI->>DB: SELECT status
-        DB-->>AI: PENDING
-        AI-->>FE: { status: "PENDING" }
+    rect rgba(0, 120, 255, 0.1)
+        opt 1. 작업 등록 및 즉시 응답
+            FE->>AI: POST /agent { action: "select_hypothesis" }
+            Note over AI: long_term_node 실행
+            AI->>DB: INSERT background_tasks (status=PENDING)
+            AI->>AI: asyncio.create_task() 백그라운드 실행 후 즉시 반환
+            Note over AI: await_long_term_node → interrupt()
+            AI-->>FE: { longTermTaskId: "abc...", agentResults: {...} }
+        end
     end
 
-    Note over AI,DB: 백그라운드 분석 완료
+    rect rgba(255, 160, 0, 0.1)
+        loop 2. 상태 모니터링 (3초마다 Polling)
+            FE->>AI: GET /bg-status/abc...
+            AI->>DB: SELECT status
+            DB-->>AI: PENDING
+            AI-->>FE: { status: "PENDING" }
+        end
+    end
+
+    Note over AI,DB: 백그라운드 분석 완료, 이메일 전송
     AI->>DB: UPDATE status=COMPLETED, resultText="..."
 
-    FE->>AI: GET /bg-status/abc...
-    AI->>DB: SELECT status
-    DB-->>AI: COMPLETED + resultText
-    AI-->>FE: { status: "COMPLETED", resultText: "..." }
+    rect rgba(0, 200, 100, 0.1)
+        opt 3. 결과 수신 및 동작 재개
+            FE->>AI: GET /bg-status/abc...
+            AI->>DB: SELECT status
+            DB-->>AI: COMPLETED + resultText
+            AI-->>FE: { status: "COMPLETED", resultText: "..." }
 
-    FE->>AI: POST /agent { action: "resume_long_term", longTermResult: "..." }
-    Note over AI: Command(resume=result) → graph 재개
-    AI->>AI: final_synthesis_node
-    AI-->>FE: { finalActionPlan: "..." }
+            FE->>AI: POST /agent { action: "resume_long_term", longTermResult: "..." }
+            Note over AI: Command(resume=result) → graph 재개
+            AI->>AI: final_synthesis_node
+            AI-->>FE: { finalActionPlan: "..." }
+        end
+    end
 ```
 
 ---
 
-### 핵심 구현: 3단계 패턴
+### 구현: 3단계 패턴
 
 #### 1단계 — `long_term_node`: 즉시 task_id 반환
 
@@ -431,7 +439,6 @@ function pollBgStatus(taskId) {
 ### `StateGraph`를 선택한 이유
 
 - **업무 흐름이 명확하다** → 순차/병렬/합류를 graph로 직접 표현
-- **병렬 구조를 코드에 드러내야 한다** → `Send API` fan-out으로 4개 에이전트 동시 실행
 - **합류 타이밍을 보장해야 한다** → join node(`await_long_term_node`)가 fan-in 동기화
 - **장기 실행 작업을 non-blocking으로 처리해야 한다** → `interrupt/resume` 패턴
 
