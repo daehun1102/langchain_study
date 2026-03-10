@@ -102,8 +102,14 @@ flowchart TD
         B --> C1["공정 이력 분석<br>process_history_node"]
         B --> C2["반품 이력 분석<br>return_history_node"]
         B --> C3["검사 결과 분석<br>test_result_node"]
-        B --> C4["장기 이력 분석<br>long_term_node<br>★ 백그라운드 실행"]
+        B --> C4["장기 이력 요청<br>long_term_node"]
     end
+
+    subgraph EXT["외부 백그라운드 시스템"]
+        BG["asyncio task<br>장기 이력 집계 (6개월치)"]
+    end
+
+    C4 -. "Task 파생" .-> BG
 
     subgraph JOIN["③ 합류 단계: 결과 통합"]
         C1 --> D["await_long_term_node<br>(Fan-in)"]
@@ -112,6 +118,8 @@ flowchart TD
         C4 --> D
         D --> INT2{{"interrupt()<br>동기 결과 + task_id 반환"}}
     end
+
+    BG -. "Polling 종료 후 Resume" .-> INT2
 
     INT2 --> F["④ 순차 단계: 종합 조치안 생성<br>final_synthesis_node"]
 
@@ -143,7 +151,7 @@ flowchart TD
 ### 3-1. 순차 단계
 
 ```mermaid
-flowchart LR
+flowchart TD
     subgraph A["create_agent"]
         A1["step1_tool 실행"] --> A2["state.current_step = 'step2'"]
         A2 --> A3["middleware가 prompt / tools 교체"]
@@ -156,13 +164,12 @@ flowchart LR
         B3 --> B4["final_synthesis_node"]
     end
 
-    A4 ~~~ B1
+    A ~~~ B
 ```
 
 | | `create_agent` | `StateGraph` |
 |---|---|---|
 | 흐름 표현 | 상태 변경 `current_step = "step2"` | `add_edge("hypothesis_node", "route_to_agents")` |
-| 흐름 가시성 | 낮음 — 코드에 직접 드러나지 않음 | 높음 — graph 선언에 그대로 표현됨 |
 
 ---
 
@@ -191,7 +198,6 @@ flowchart LR
 | | `create_agent` | `StateGraph` |
 |---|---|---|
 | 병렬 주체 | 모델이 여러 tool call 생성 → runtime이 병렬 실행 | `Send(node_name, sub_state)` 목록으로 명시적 fan-out |
-| 구조 가시성 | 낮음 — 코드에 branch가 드러나지 않음 | 높음 — 병렬 branch가 graph에 직접 표현됨 |
 
 ---
 
@@ -222,7 +228,6 @@ flowchart LR
 | | `create_agent` | `StateGraph` |
 |---|---|---|
 | 분기 표현 | `current_step` 상태 변경 → middleware가 다음 tool/prompt 결정 | `add_conditional_edges` 또는 `Command(goto=...)` |
-| 분기 가시성 | 낮음 — 코드 흐름에서 직접 보이지 않음 | 높음 — graph 구조에 경로가 명시됨 |
 
 ---
 
@@ -251,7 +256,6 @@ flowchart LR
 | | `create_agent` | `StateGraph` |
 |---|---|---|
 | 합류 방식 | tool 결과가 다음 model step으로 암묵적 취합 | join node가 branch 완료 후 명시적 동기화 |
-| 표현 | 암묵적 | 명시적 |
 
 ---
 
