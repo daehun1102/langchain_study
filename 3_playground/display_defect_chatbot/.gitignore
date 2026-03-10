@@ -12,3 +12,4 @@ dist/
 uploads/
 bg_results/
 .vscode
+.worktrees/
