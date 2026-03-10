@@ -51,6 +51,12 @@ export function useDefectChat() {
   // { id, agentKey, status: 'loading'|'done'|'error'|'user', result: null|{ analysis, suspectRows }, userText?: string }
   const chatMessages = ref([])
 
+  // 알림 이메일 (localStorage 영구 저장)
+  const userEmail = ref(localStorage.getItem('user_email') || '')
+  watch(userEmail, v => {
+    try { localStorage.setItem('user_email', v || '') } catch (_) {}
+  })
+
   // 사용자 입력
   const userInput = ref('')
 
@@ -212,6 +218,7 @@ export function useDefectChat() {
         action: 'select_hypothesis',
         selectedHypothesis: selectedHypothesis.value,
         enabledAgents: enabledKeys,
+        notifyEmail: userEmail.value || null,
       })
 
       const results = data.agentResults || {}
@@ -322,6 +329,7 @@ export function useDefectChat() {
     isChatBlocked,
     chatMessages,
     userInput, sendUserMessage,
+    userEmail,
     sessions, activeSessionId,
     startAnalysis, selectHypothesis, runAgents, toggleAgent,
     saveCurrentSession, deleteSession, loadSession, newAnalysis, reset,
