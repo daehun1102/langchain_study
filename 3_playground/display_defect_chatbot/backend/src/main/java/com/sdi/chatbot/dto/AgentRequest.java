@@ -15,4 +15,5 @@ public class AgentRequest {
     private String selectedHypothesis;
     private String longTermResult;
     private String userMessage;
+    private String notifyEmail;
 }
