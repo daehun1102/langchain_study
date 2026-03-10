@@ -1,5 +1,5 @@
 // display_defect_chatbot/frontend/src/composables/useDefectChat.js
-import { ref, reactive, watch } from 'vue'
+import { ref, reactive, watch, computed } from 'vue'
 import { callAgent, getBgStatus } from '../api/defectApi.js'
 
 function uuidv4() {
@@ -23,6 +23,9 @@ export function useDefectChat() {
   const error = ref(null)
   const pollTimer = ref(null)
   const longTermTaskId = ref(null)
+  const isChatBlocked = computed(
+    () => enabledAgents.long_term && longTermStatus.value === 'PENDING'
+  )
 
   const form = reactive({
     company: 'SDC',
@@ -316,6 +319,7 @@ export function useDefectChat() {
     form, hypotheses, selectedHypothesis,
     enabledAgents, agentLoading, agentResults,
     longTermStatus, longTermResult, finalActionPlan,
+    isChatBlocked,
     chatMessages,
     userInput, sendUserMessage,
     sessions, activeSessionId,
