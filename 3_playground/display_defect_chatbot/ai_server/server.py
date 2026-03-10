@@ -1,6 +1,7 @@
 # ai_server/server.py
 from contextlib import asynccontextmanager
 from typing import Optional
+import logging
 
 from fastapi import FastAPI, UploadFile, File, HTTPException, Request
 from langchain_openai import OpenAIEmbeddings
@@ -9,6 +10,12 @@ from pydantic import BaseModel, ConfigDict, field_validator
 from pydantic.alias_generators import to_camel
 import os
 import tempfile
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
 
 from ai_server.agents.graph import build_investigation_graph, ALL_AGENTS, DefectAnalysisState
 from ai_server.config import get_settings
