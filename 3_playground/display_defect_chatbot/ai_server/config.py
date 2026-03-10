@@ -20,6 +20,13 @@ class Settings(BaseSettings):
     model_name: str = "gpt-4o-mini"
     embedding_model: str = "text-embedding-3-small"
 
+    # SMTP 이메일 알림
+    smtp_host: str = ""
+    smtp_port: int = 587
+    smtp_user: str = ""
+    smtp_password: str = ""
+    smtp_from: str = ""
+
     # ── 그래프 상태 로깅 ──────────────────────────────────────────────────
     log_graph_enabled: bool = False
     log_graph_target: Literal["console", "file", "both"] = "console"
