@@ -5,8 +5,9 @@
       <h1>🔬 Display Defect Analyzer</h1>
       <span class="subtitle">삼성 디스플레이 픽셀 불량 분석 AI</span>
       <div class="email-setting">
-        <label class="email-label">📧 알림 이메일</label>
+        <label for="notify-email" class="email-label">📧 알림 이메일</label>
         <input
+          id="notify-email"
           v-model="userEmail"
           type="email"
           class="email-input"

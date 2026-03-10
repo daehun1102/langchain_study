@@ -23,9 +23,6 @@ export function useDefectChat() {
   const error = ref(null)
   const pollTimer = ref(null)
   const longTermTaskId = ref(null)
-  const isChatBlocked = computed(
-    () => enabledAgents.long_term && longTermStatus.value === 'PENDING'
-  )
 
   const form = reactive({
     company: 'SDC',
@@ -45,6 +42,9 @@ export function useDefectChat() {
 
   const longTermStatus = ref('PENDING')
   const longTermResult = ref(null)
+  const isChatBlocked = computed(
+    () => enabledAgents.long_term && longTermStatus.value === 'PENDING'
+  )
   const finalActionPlan = ref('')
 
   // --- 신규: 채팅 메시지 스트림 ---
