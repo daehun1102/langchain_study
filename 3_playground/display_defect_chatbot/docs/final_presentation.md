@@ -1,41 +1,48 @@
 # Display Defect Chatbot — 발표 자료
 
----
+### 목차
+
+| #   | 섹션                                                   |
+| --- | ------------------------------------------------------ |
+| 1   | 발표 개요                                              |
+| 2   | Workflow 개요                                          |
+| 3   | Workflow 구현 방식 비교 ( create_agent vs StateGraph ) |
+| 4   | Challenge: 장기 이력 처리                              |
+| 5   | 마무리 정리                                            |
+
+<br>
 
 ## 1. 발표 개요
 
 ### 프로젝트 소개
 
-> 삼성 디스플레이 패널 픽셀 불량을 AI가 진단하고 조치안을 생성하는 챗봇
+> 삼성 디스플레이 패널 픽셀 불량건 메일을 받은 공정 엔지니어가 AI 챗봇에 불량 증상과 제품 정보를 입력하면,
+> AI가 RAG 기반으로 불량 원인 가설을 생성하고, 공정·반품·검사·장기 이력을 병렬로 분석한 뒤,
+> 종합 조치안을 도출하고 Q&A로 후속 질문까지 처리하는 챗봇입니다.
 
-- **입력**: 불량 증상, 제품 ID, 고객사
-- **출력**: 가설 → 병렬 이력 분석 → 종합 조치안 → Q&A
+| #   | 주제                          | 핵심 질문                                                                  |
+| --- | ----------------------------- | -------------------------------------------------------------------------- |
+| 1   | **프로젝트 시나리오**         | 실제 불량 접수부터 조치안 도출까지 어떤 흐름으로 동작하나?                 |
+| 2   | **Workflow 구현 방식**        | `create_agent` vs `StateGraph` — 이 프로젝트는 왜 `StateGraph`를 선택했나? |
+| 3   | **Challenge: 장기 이력 처리** | 시간이 오래 걸리는 도구를 어떻게 처리했나?                                 |
 
----
-
-### 발표 주제
-
-| # | 주제 | 핵심 질문 |
-|---|------|-----------|
-| 2 | **Workflow 개요** | 이 프로젝트의 업무 흐름을 어떻게 모델링했나? |
-| 3 | **Workflow 구현 방식 비교** | `create_agent` vs `StateGraph` — 언제 어떤 방식을 써야 하나? |
-| 4 | **Challenge: 장기 이력 처리** | 오래 걸리는 분석을 어떻게 비동기로 처리했나? |
-
----
+<br>
 
 ## 2. Workflow 개요
 
 ### Business Process Modeling 개념
 
-업무 흐름을 설계할 때 사용하는 4가지 기본 단계.
+업무 흐름을 설계할 때 사용하는 4가지 기본 단계입니다.
 
 **① 순차 — 앞이 끝나야 다음 실행**
+
 ```mermaid
 flowchart LR
     A["A"] --> B["B"] --> C["C"]
 ```
 
 **② 병렬 — 여러 작업이 동시에 시작**
+
 ```mermaid
 flowchart LR
     S["시작"] --> A["A"]
@@ -44,6 +51,7 @@ flowchart LR
 ```
 
 **③ 분기 — 조건에 따라 다른 노드로**
+
 ```mermaid
 flowchart LR
     X["조건 판단"] --> R{"조건?"}
@@ -52,6 +60,7 @@ flowchart LR
 ```
 
 **④ 합류 — 병렬 결과를 모아 다음으로**
+
 ```mermaid
 flowchart LR
     A["A 결과"] --> N["다음 단계"]
@@ -59,31 +68,40 @@ flowchart LR
     C["C 결과"] --> N
 ```
 
----
-
 ### 프로젝트 시나리오
 
-```
-사용자 입력 (불량 증상, 제품 ID)
-    ↓
-① 가설 생성 (RAG 기반)
-    ↓
-사용자 가설 선택
-    ↓
-② 병렬 이력 분석 (4개 에이전트)
-    ├── 공정 이력 분석
-    ├── 반품 이력 분석
-    ├── 검사 결과 분석
-    └── 장기 이력 분석 (백그라운드)
-    ↓
-③ 결과 합류 → 종합 조치안 생성
-    ↓
-④ Q&A 대화
+```mermaid
+flowchart TD
+    IN["사용자 입력<br/>불량 증상: '화면 좌측 상단 흰색 점 3개 고정'<br/>제품 ID: SDC-OLED-55-A2024-0312<br/>고객사: 삼성전자 TV 사업부"]
+    IN --> HYP["① 가설 생성 (RAG 기반)<br/>예) '픽셀 구동 회로 단락' / 'TFT 게이트 불량' / '봉지층 수분 침투'"]
+    HYP --> SEL["사용자 가설 선택<br/>예) '픽셀 구동 회로 단락' 선택"]
+    SEL --> PAR["② 병렬 이력 분석 (4개 에이전트)"]
+    PAR --> A1["공정 이력 분석<br/>예) 3월 2일 증착 공정 이상 감지"]
+    PAR --> A2["반품 이력 분석<br/>예) 동일 LOT 반품 5건 확인"]
+    PAR --> A3["검사 결과 분석<br/>예) AOI 검사 통과 기록 있음"]
+    PAR --> A4["장기 이력 분석 (백그라운드)<br/>예) 6개월 내 유사 불량 23건"]
+    A1 & A2 & A3 & A4 --> SYN["③ 종합 조치안 생성<br/>예) '증착 장비 점검 + LOT 전수 재검사 권고'"]
+    SYN --> QU["④ 사용자 질문<br/>예) '재발 방지 조치는?'"]
+    QU --> QA["AI 답변<br/>예) '증착 장비 정기 점검 주기 단축 권고'"]
+    QA --> QU
+
+    style IN  fill:#fffbea,stroke:#f0d060,color:#333
+    style SEL fill:#fffbea,stroke:#f0d060,color:#333
+    style QU  fill:#fffbea,stroke:#f0d060,color:#333
+    style HYP fill:#eaf4fb,stroke:#7ab8d8,color:#333
+    style PAR fill:#eaf4fb,stroke:#7ab8d8,color:#333
+    style A1  fill:#eaf4fb,stroke:#7ab8d8,color:#333
+    style A2  fill:#eaf4fb,stroke:#7ab8d8,color:#333
+    style A3  fill:#eaf4fb,stroke:#7ab8d8,color:#333
+    style A4  fill:#eaf4fb,stroke:#7ab8d8,color:#333
+    style SYN fill:#eaf4fb,stroke:#7ab8d8,color:#333
+    style QA  fill:#eaf4fb,stroke:#7ab8d8,color:#333
+    linkStyle default stroke:#555,stroke-width:1.5px
 ```
 
 ---
 
-### Business Process Modeling
+### Business Process Modeling -> State Graph
 
 ```mermaid
 flowchart TD
@@ -128,25 +146,26 @@ flowchart TD
     G --> END([종료])
 ```
 
----
-
 ### Business Process 단계 정리
 
-| 단계 | 설명 | 이 프로젝트의 구현 |
-|------|------|-------------------|
-| **순차** | 앞 단계가 끝나야 다음 단계 실행 | 가설 생성 → 가설 선택 → 에이전트 실행 → 조치안 → Q&A |
-| **병렬** | 여러 작업이 동시에 시작 | Send API로 4개 이력 에이전트 동시 실행 |
-| **합류** | 병렬 결과를 모아 다음 단계로 | `await_long_term_node`가 4개 결과 수집 후 종합 단계로 전달 |
-
----
+| 단계     | 설명                            | 이 프로젝트의 구현                                         |
+| -------- | ------------------------------- | ---------------------------------------------------------- |
+| **순차** | 앞 단계가 끝나야 다음 단계 실행 | 가설 생성 → 가설 선택 → 에이전트 실행 → 조치안 → Q&A       |
+| **병렬** | 여러 작업이 동시에 시작         | Send API로 4개 이력 에이전트 동시 실행                     |
+| **합류** | 병렬 결과를 모아 다음 단계로    | `await_long_term_node`가 4개 결과 수집 후 종합 단계로 전달 |
 
 ## 3. Workflow 구현 방식 비교
 
 ### `create_agent` vs `StateGraph`
 
-> 이 프로젝트는 **`StateGraph`** 방식으로 구현. 각 단계별로 두 방식의 차이를 살펴본다.
+|                  | `create_agent`                                       | `StateGraph`                                                      |
+| ---------------- | ---------------------------------------------------- | ----------------------------------------------------------------- |
+| **성격**         | 모델이 상황에 따라 tool을 고르는 **동적 agent loop** | state / node / edge를 개발자가 설계하는 **명시적 workflow graph** |
+| **흐름 구현**    | 상태 전이(`current_step`)로 간접 표현                | edge 연결로 직접 표현                                             |
+| **잘 맞는 경우** | 빠른 프로토타입, 모델 주도형 동적 실행               | 순차·병렬·합류가 명확한 업무 흐름                                 |
 
----
+> `create_agent`는 `StateGraph` 기반의 prebuilt agent로, 두 방식은 완전히 별개가 아닌 **구현 접근 방식의 차이**입니다.
+> 어느 한쪽만 고집하기보다, 상황에 맞게 두 방식을 적절히 조합해서 사용하는 것이 바람직하다고 생각합니다.
 
 ### 3-1. 순차 단계
 
@@ -165,13 +184,15 @@ flowchart TD
     end
 
     A ~~~ B
+
+    style A fill:#fffbea,stroke:#f0d060,color:#333
+    style B fill:#eaf4fb,stroke:#7ab8d8,color:#333
+    linkStyle default stroke:#555,stroke-width:1.5px
 ```
 
-| | `create_agent` | `StateGraph` |
-|---|---|---|
+|           | `create_agent`                     | `StateGraph`                                     |
+| --------- | ---------------------------------- | ------------------------------------------------ |
 | 흐름 표현 | 상태 변경 `current_step = "step2"` | `add_edge("hypothesis_node", "route_to_agents")` |
-
----
 
 ### 3-2. 병렬 단계
 
@@ -193,18 +214,20 @@ flowchart LR
     end
 
     R1 ~~~ S
+
+    style A fill:#fffbea,stroke:#f0d060,color:#333
+    style B fill:#eaf4fb,stroke:#7ab8d8,color:#333
+    linkStyle default stroke:#555,stroke-width:1.5px
 ```
 
-| | `create_agent` | `StateGraph` |
-|---|---|---|
-| 병렬 주체 | 모델이 여러 tool call 생성 → runtime이 병렬 실행 | `Send(node_name, sub_state)` 목록으로 명시적 fan-out |
-
----
+|           | `create_agent`                                          | `StateGraph`                                         |
+| --------- | ------------------------------------------------------- | ---------------------------------------------------- |
+| 병렬 주체 | 모델이 여러 tool call 생성 → runtime 환경에서 병렬 실행 | `Send(node_name, sub_state)` 목록으로 명시적 fan-out |
 
 ### 3-3. 분기 단계 (개념 비교)
 
-> 이 프로젝트에는 **조건에 따라 서로 다른 노드로 향하는 분기**가 없다.
-> 아래는 분기가 필요한 경우 두 방식이 어떻게 다른지를 보여주는 개념 비교다.
+> 이 프로젝트에는 **조건에 따라 서로 다른 노드로 향하는 분기**가 없습니다.
+> 아래는 분기가 필요한 경우 두 방식이 어떻게 다른지를 보여주는 개념 비교입니다.
 
 ```mermaid
 flowchart LR
@@ -223,13 +246,15 @@ flowchart LR
     end
 
     C5 ~~~ G1
+
+    style A fill:#fffbea,stroke:#f0d060,color:#333
+    style B fill:#eaf4fb,stroke:#7ab8d8,color:#333
+    linkStyle default stroke:#555,stroke-width:1.5px
 ```
 
-| | `create_agent` | `StateGraph` |
-|---|---|---|
+|           | `create_agent`                                                | `StateGraph`                                     |
+| --------- | ------------------------------------------------------------- | ------------------------------------------------ |
 | 분기 표현 | `current_step` 상태 변경 → middleware가 다음 tool/prompt 결정 | `add_conditional_edges` 또는 `Command(goto=...)` |
-
----
 
 ### 3-4. 합류 단계
 
@@ -251,22 +276,24 @@ flowchart LR
     end
 
     A5 ~~~ B1
+
+    style A fill:#fffbea,stroke:#f0d060,color:#333
+    style B fill:#eaf4fb,stroke:#7ab8d8,color:#333
+    linkStyle default stroke:#555,stroke-width:1.5px
 ```
 
-| | `create_agent` | `StateGraph` |
-|---|---|---|
+|           | `create_agent`                              | `StateGraph`                             |
+| --------- | ------------------------------------------- | ---------------------------------------- |
 | 합류 방식 | tool 결과가 다음 model step으로 암묵적 취합 | join node가 branch 완료 후 명시적 동기화 |
-
----
 
 ### 최종 비교 요약
 
-| 단계 | `create_agent` 코드 방식 | `StateGraph` 코드 방식 |
-|------|--------------------------|------------------------|
-| 순차 | 상태 변경 + middleware | `add_edge` |
-| 병렬 | 모델이 여러 tool call → runtime 병렬 실행 | `Send(node, sub_state)` fan-out |
-| 합류 | 다음 model step으로 암묵적 취합 | join node 명시적 동기화 |
-| 분기 *(개념)* | `current_step` 변경 → middleware가 경로 결정 | `add_conditional_edges` / `Command(goto=...)` |
+| 단계          | `create_agent` 코드 방식                     | `StateGraph` 코드 방식                        |
+| ------------- | -------------------------------------------- | --------------------------------------------- |
+| 순차          | 상태 변경 + middleware                       | `add_edge`                                    |
+| 병렬          | 모델이 여러 tool call → runtime 병렬 실행    | `Send(node, sub_state)` fan-out               |
+| 합류          | 다음 model step으로 암묵적 취합              | join node 명시적 동기화                       |
+| 분기 _(개념)_ | `current_step` 변경 → middleware가 경로 결정 | `add_conditional_edges` / `Command(goto=...)` |
 
 > **빠른 에이전트 구축 → `create_agent`**
 > **흐름 자체를 설계해야 할 때 → `StateGraph`**
@@ -334,8 +361,6 @@ sequenceDiagram
     end
 ```
 
----
-
 ### 구현: 3단계 패턴
 
 #### 1단계 — `long_term_node`: 즉시 task_id 반환
@@ -377,34 +402,30 @@ async def await_long_term_node(state: DefectAnalysisState) -> dict:
 
 ```javascript
 function pollBgStatus(taskId) {
-    pollTimer.value = setInterval(async () => {
-        const data = await getBgStatus(taskId)          // GET /bg-status/{taskId}
-        if (data.status === 'COMPLETED') {
-            clearInterval(pollTimer.value)
-            // 그래프 재개: long_term_result 전달
-            const response = await callAgent({
-                action: 'resume_long_term',
-                longTermResult: data.resultText,
-            })
-            finalActionPlan.value = response.finalActionPlan
-        }
-    }, 3000)
+  pollTimer.value = setInterval(async () => {
+    const data = await getBgStatus(taskId); // GET /bg-status/{taskId}
+    if (data.status === "COMPLETED") {
+      clearInterval(pollTimer.value);
+      // 그래프 재개: long_term_result 전달
+      const response = await callAgent({
+        action: "resume_long_term",
+        longTermResult: data.resultText,
+      });
+      finalActionPlan.value = response.finalActionPlan;
+    }
+  }, 3000);
 }
 ```
 
----
+### 아키텍처 정리
 
-### 아키텍처 핵심 보장
-
-| 특성 | 구현 방법 |
-|------|-----------|
-| **Non-blocking** | `asyncio.create_task()` — HTTP 응답을 즉시 반환 |
-| **상태 영속성** | PostgreSQL `background_tasks` 테이블 — 서버 재시작에도 복원 |
-| **세션 격리** | `task_id`와 `session_id` 1:1 연결 — 동시 사용자 안전 |
-| **자동 재개** | Polling 완료 후 `Command(resume=result)`로 그래프 이어서 실행 |
-| **장기 이력 없을 때** | `enabled_agents`에서 제외 시 `interrupt()` 즉시 통과 |
-
----
+| 특성                  | 구현 방법                                                     |
+| --------------------- | ------------------------------------------------------------- |
+| **Non-blocking**      | `asyncio.create_task()` — HTTP 응답을 즉시 반환               |
+| **상태 영속성**       | PostgreSQL `background_tasks` 테이블 — 서버 재시작에도 복원   |
+| **세션 격리**         | `task_id`와 `session_id` 1:1 연결 — 동시 사용자 안전          |
+| **자동 재개**         | Polling 완료 후 `Command(resume=result)`로 그래프 이어서 실행 |
+| **장기 이력 없을 때** | `enabled_agents`에서 제외 시 `interrupt()` 즉시 통과          |
 
 ### 데이터 흐름 요약
 
@@ -426,27 +447,21 @@ function pollBgStatus(taskId) {
       → final_synthesis_node → 종합 조치안
 ```
 
----
-
 ## 5. 마무리 정리
 
 ### 핵심 요약
 
-| 주제 | 핵심 내용 |
-|------|-----------|
-| **Workflow 모델링** | 순차 → 병렬(Send API) → 합류(join node) → 순차(조치안 · Q&A) |
-| **StateGraph 선택 이유** | 명확한 업무 흐름 + 병렬 fan-out + 합류 타이밍 제어가 필요했기 때문 |
-| **장기 이력 처리** | `asyncio.create_task` + DB 상태 추적 + Polling + `interrupt/resume` |
-
----
+| 주제                     | 핵심 내용                                                           |
+| ------------------------ | ------------------------------------------------------------------- |
+| **Workflow 모델링**      | 순차 → 병렬(Send API) → 합류(join node) → 순차(조치안 · Q&A)        |
+| **StateGraph 선택 이유** | 명확한 업무 흐름 + 병렬 fan-out + 합류 타이밍 제어가 필요했기 때문  |
+| **장기 이력 처리**       | `asyncio.create_task` + DB 상태 추적 + Polling + `interrupt/resume` |
 
 ### `StateGraph`를 선택한 이유
 
 - **업무 흐름이 명확하다** → 순차/병렬/합류를 graph로 직접 표현
 - **합류 타이밍을 보장해야 한다** → join node(`await_long_term_node`)가 fan-in 동기화
 - **장기 실행 작업을 non-blocking으로 처리해야 한다** → `interrupt/resume` 패턴
-
----
 
 ### 장기 이력 처리 — 한 줄 결론
 

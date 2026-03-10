@@ -319,14 +319,22 @@ from langgraph.types import Command
 class FlowState(AgentState):
     current_step: str
 
+@tool
+def step1_tool(runtime: ToolRuntime[None, FlowState]) -> Command:
+    return Command(update={"current_step": "step2"})
+
+@tool
+def step2_tool(runtime: ToolRuntime[None, FlowState]) -> str:
+    return "step2 done"
+
 STEP_CONFIG = {
     "step1": {
         "prompt": "지금은 step1 단계다. step1_tool만 사용해라.",
-        "tools": [],
+        "tools": [step1_tool],
     },
     "step2": {
         "prompt": "지금은 step2 단계다. step2_tool만 사용해라.",
-        "tools": [],
+        "tools": [step2_tool],
     },
 }
 
@@ -339,17 +347,6 @@ def apply_step_config(request: ModelRequest, handler) -> ModelResponse:
         tools=cfg["tools"],
     )
     return handler(request)
-
-@tool
-def step1_tool(runtime: ToolRuntime[None, FlowState]) -> Command:
-    return Command(update={"current_step": "step2"})
-
-@tool
-def step2_tool(runtime: ToolRuntime[None, FlowState]) -> str:
-    return "step2 done"
-
-STEP_CONFIG["step1"]["tools"] = [step1_tool]
-STEP_CONFIG["step2"]["tools"] = [step2_tool]
 
 agent = create_agent(
     model="your-model",
