@@ -97,6 +97,15 @@ class BgStatusResponse(BaseModel):
     result_text: Optional[str] = None
 
 
+class DocumentResponse(BaseModel):
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
+    doc_id: str
+    filename: str
+    doc_type: str
+    status: str
+    created_at: Optional[str] = None
+
+
 # ── 헬퍼 ───────────────────────────────────────────────────────────────────
 
 def _parse_interrupt(result: dict) -> dict:
@@ -196,16 +205,7 @@ async def get_bg_status(task_id: str):
     return BgStatusResponse(**row)
 
 
-class DocumentResponse(BaseModel):
-    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
-    doc_id: str
-    filename: str
-    doc_type: str
-    status: str
-    created_at: Optional[str] = None
-
-
-@app.get("/api/documents", response_model=list[DocumentResponse])
+@app.get("/api/documents", response_model=list[DocumentResponse], response_model_by_alias=True)
 async def get_documents():
     rows = await list_documents()
     return [
@@ -220,7 +220,7 @@ async def get_documents():
     ]
 
 
-@app.post("/api/documents", response_model=DocumentResponse)
+@app.post("/api/documents", response_model=DocumentResponse, response_model_by_alias=True)
 async def upload_document(request: Request, file: UploadFile = File(...)):
     doc_id = str(_uuid.uuid4())
     vsm = request.app.state.vsm
@@ -233,7 +233,13 @@ async def upload_document(request: Request, file: UploadFile = File(...)):
     finally:
         os.unlink(tmp_path)
 
-    row = await insert_document(doc_id, file.filename, "txt", "INDEXED")
+    try:
+        row = await insert_document(doc_id, file.filename, "txt", "INDEXED")
+    except Exception:
+        # Roll back the vector store insert to keep state consistent
+        await vsm.delete_by_doc_id(doc_id)
+        raise
+
     return DocumentResponse(
         doc_id=row["doc_id"],
         filename=row["filename"],
@@ -243,12 +249,22 @@ async def upload_document(request: Request, file: UploadFile = File(...)):
     )
 
 
-@app.delete("/api/documents/{doc_id}")
+@app.delete("/api/documents/{doc_id}", response_model=DocumentResponse)
 async def delete_doc(doc_id: str, request: Request):
+    rows = await list_documents()
+    doc = next((r for r in rows if r["doc_id"] == doc_id), None)
+    if doc is None:
+        raise HTTPException(status_code=404, detail=f"Document {doc_id!r} not found")
     vsm = request.app.state.vsm
     await vsm.delete_by_doc_id(doc_id)
     await _delete_document_db(doc_id)
-    return {"doc_id": doc_id}
+    return DocumentResponse(
+        doc_id=doc["doc_id"],
+        filename=doc["filename"],
+        doc_type=doc["doc_type"],
+        status=doc["status"],
+        created_at=str(doc["created_at"]) if doc["created_at"] else None,
+    )
 
 
 @app.get("/api/health")
