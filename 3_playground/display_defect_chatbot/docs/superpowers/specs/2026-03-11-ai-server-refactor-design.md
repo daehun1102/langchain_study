@@ -35,7 +35,7 @@ ai_server/
 │   ├── agent_service.py         ← 그래프 invoke, interrupt 파싱, 응답 조립
 │   └── document_service.py      ← 문서 업로드/삭제 조율 (ingest + repo)
 │
-├── agents/                      ← Domain Layer (변경 없음)
+├── agents/                      ← Domain Layer
 │   ├── __init__.py
 │   ├── graph.py
 │   ├── state.py
@@ -49,7 +49,7 @@ ai_server/
 │
 ├── tools/                       ← LangChain 도구
 │   ├── __init__.py
-│   └── rag_tool.py              ← (변경 없음)
+│   └── rag_tool.py              ← 현재 미사용(dead code). 삭제 대상.
 │
 ├── repositories/                ← Data Access Layer
 │   ├── __init__.py
@@ -67,6 +67,11 @@ ai_server/
     └── email_utils.py
 ```
 
+**삭제 대상 파일:**
+- `tools/sql_tools.py` — `repositories/`로 분리 후 제거
+- `tools/rag_tool.py` — dead code (어디서도 import되지 않음)
+- `agents/main_agent.py` — DEPRECATED 주석으로 명시된 미사용 파일
+
 ---
 
 ## 3. 레이어 책임 및 의존 방향
@@ -75,13 +80,14 @@ ai_server/
 
 ```
 api/ → services/ → agents/ + repositories/ + infra/
-agents/ → repositories/ + tools/
-tools/ → infra/
+agents/ → repositories/
 ```
 
-- `api/`는 `services/`만 호출. `agents/`, `infra/`를 직접 참조하지 않음.
+**규칙:**
+- `api/`는 `services/`만 호출. 단, `GET /api/chat/bg-status/{task_id}`처럼 비즈니스 로직이 없는 단순 조회는 라우터에서 `repositories/`를 직접 호출한다.
 - `services/`는 도메인(`agents/`), 데이터 접근(`repositories/`), 인프라(`infra/`) 조율.
-- `agents/`는 `repositories/`(쿼리), `tools/`(RAG) 사용. `api/`, `services/`를 모름.
+- `agents/`는 `repositories/` 사용 가능. `api/`, `services/`를 모름.
+- `tools/rag_tool.py` 삭제 후 `tools/` 폴더는 비게 되므로 폴더 자체도 제거.
 
 ### 각 레이어 책임
 
@@ -152,33 +158,64 @@ def get_vsm(request: Request):
     return request.app.state.vsm
 ```
 
-라우터에서 `request.app.state.graph` 직접 접근 제거. `Depends(get_graph)` 패턴 사용.
+라우터에서 `request.app.state.*` 직접 접근 제거. `Depends(get_graph)` 패턴 사용.
 
 ### 4-3. `services/agent_service.py`
 
 현재 `server.py`의 `_parse_interrupt()`, `_build_response()`, action별 분기 로직을 이동.
 
 ```python
-async def handle_agent_request(req, graph, vsm) -> AgentResponse:
+async def handle_agent_request(req: AgentRequest, graph, vsm) -> AgentResponse:
     # config 구성, action 분기, graph.ainvoke(), interrupt 파싱, 응답 조립
     ...
 ```
 
 ### 4-4. `services/document_service.py`
 
-현재 `server.py`의 업로드/삭제 핸들러 로직(ingest + repo 조율, rollback)을 이동.
+임시 파일 생성/삭제(`tempfile`, `os.unlink`)는 API 레이어(`api/documents.py`)에서 담당한다.
+서비스는 `tmp_path`를 받아 ingest와 repo 조율만 수행한다.
 
 ```python
-async def upload_document(doc_id, tmp_path, filename, vsm) -> dict:
+# api/documents.py (API 레이어 — 파일 생명주기 관리)
+with tempfile.NamedTemporaryFile(delete=False, suffix=".txt") as tmp:
+    tmp.write(await file.read())
+    tmp_path = tmp.name
+try:
+    row = await document_service.upload(doc_id, tmp_path, file.filename, vsm)
+finally:
+    os.unlink(tmp_path)
+
+# services/document_service.py (서비스 레이어 — ingest + repo 조율)
+async def upload(doc_id: str, tmp_path: str, filename: str, vsm) -> dict:
     await ingest_document(doc_id, tmp_path, vsm)
     try:
         return await document_repo.insert(doc_id, filename, "txt", "INDEXED")
     except Exception:
         await vsm.delete_by_doc_id(doc_id)  # rollback
         raise
+
+async def delete(doc_id: str, vsm) -> dict:
+    doc = await document_repo.get(doc_id)  # 404 검증
+    await vsm.delete_by_doc_id(doc_id)
+    await document_repo.delete(doc_id)
+    return doc
 ```
 
-### 4-5. `tools/sql_tools.py` → `repositories/` 분리
+### 4-5. `bg-status` 엔드포인트 라우팅 결정
+
+`GET /api/chat/bg-status/{task_id}`는 단순 조회이므로 서비스 레이어를 거치지 않고 `api/chat.py` 라우터에서 `bg_task_repo.get_bg_task()`를 직접 호출한다. 서비스 레이어가 단순 위임 함수가 되는 것을 방지하기 위한 의도적 선택이다.
+
+```python
+# api/chat.py
+@router.get("/chat/bg-status/{task_id}", response_model=BgStatusResponse, response_model_by_alias=True)
+async def get_bg_status(task_id: str):
+    row = await bg_task_repo.get_bg_task(task_id)
+    if not row:
+        raise HTTPException(status_code=404, detail="task not found")
+    return BgStatusResponse(**row)
+```
+
+### 4-6. `tools/sql_tools.py` → `repositories/` 분리
 
 | 함수 | 이동 위치 |
 |---|---|
@@ -188,16 +225,19 @@ async def upload_document(doc_id, tmp_path, filename, vsm) -> dict:
 
 `tools/sql_tools.py` 파일은 삭제.
 
-### 4-6. 서브에이전트 import 변경
+### 4-7. import 변경 전체 목록
 
-`agents/sub/` 4개 파일 모두:
-```python
-# 변경 전
-from ai_server.tools.sql_tools import query_process_history
+`sql_tools`를 참조하는 모든 파일의 import를 갱신해야 한다.
 
-# 변경 후
-from ai_server.repositories.agent_queries import query_process_history
-```
+| 파일 | 변경 전 | 변경 후 |
+|---|---|---|
+| `agents/sub/process_history.py` | `from ai_server.tools.sql_tools import query_process_history` | `from ai_server.repositories.agent_queries import query_process_history` |
+| `agents/sub/return_history.py` | `from ai_server.tools.sql_tools import query_return_history` | `from ai_server.repositories.agent_queries import query_return_history` |
+| `agents/sub/test_result.py` | `from ai_server.tools.sql_tools import query_test_results` | `from ai_server.repositories.agent_queries import query_test_results` |
+| `agents/sub/long_term.py` | `from ai_server.tools.sql_tools import query_long_term_history, insert_bg_task, complete_bg_task, fail_bg_task` | `from ai_server.repositories.agent_queries import query_long_term_history` + `from ai_server.repositories.bg_task_repo import insert_bg_task, complete_bg_task, fail_bg_task` |
+| `server.py` (분해 과정에서 제거) | `from ai_server.tools.sql_tools import get_bg_task, list_documents, insert_document, delete_document` | 핸들러가 `api/chat.py`, `api/documents.py`로 이동하면서 자동 해소. 각 라우터/서비스에서 repo 직접 참조. |
+
+**`agents/sub/long_term.py` 특이사항**: 이 파일은 `agent_queries`(도메인 쿼리)와 `bg_task_repo`(백그라운드 상태 관리) 두 repository를 함께 사용한다. 장기 이력 분석이 백그라운드 태스크 생명주기를 내부에서 관리하는 구조이며, `agents/ → repositories/` 의존 방향 안에서 허용된다.
 
 ---
 
@@ -210,15 +250,19 @@ from ai_server.repositories.agent_queries import query_process_history
 | `services/` | 신규 생성 (agent_service, document_service) |
 | `repositories/` | 신규 생성 (agent_queries, document_repo, bg_task_repo) |
 | `tools/sql_tools.py` | 삭제 |
+| `tools/rag_tool.py` | 삭제 (dead code) |
+| `tools/` 폴더 | 삭제 (내용물 전부 제거 후) |
+| `agents/main_agent.py` | 삭제 (DEPRECATED) |
 | `agents/sub/*.py` | import 경로 수정만 |
-| `agents/`, `tools/rag_tool.py`, `infra/`, `config.py` | 변경 없음 |
+| `agents/` (main_agent 제외), `infra/`, `config.py` | 변경 없음 |
 
 ---
 
 ## 6. 성공 기준
 
 - `server.py`가 앱 팩토리와 lifespan만 포함 (~40줄)
-- 각 라우터 파일이 HTTP 변환과 service 호출만 담당
+- 각 라우터 파일이 HTTP 변환과 service 호출만 담당 (`bg-status` 단순 조회 예외 허용)
 - `repositories/` 각 파일이 단일 도메인의 SQL만 포함
 - 기존 API 동작이 그대로 유지됨 (엔드포인트 경로, 요청/응답 형식 불변)
 - `from ai_server.tools.sql_tools` import가 코드베이스에서 완전히 제거됨
+- `agents/main_agent.py`, `tools/rag_tool.py` dead code 제거됨
