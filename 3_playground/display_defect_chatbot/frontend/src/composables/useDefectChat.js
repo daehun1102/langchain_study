@@ -196,8 +196,13 @@ export function useDefectChat() {
     }
   }
 
-  function selectHypothesis(hypothesis) {
-    selectedHypothesis.value = hypothesis
+  function selectHypothesis(h) {
+    selectedHypothesis.value = h.text
+
+    // 가설 선택 시 전체 초기화 후 추천 에이전트만 ON (이후 수동 변경 가능)
+    AGENT_CONFIG.forEach(a => { enabledAgents[a.key] = false })
+    h.recommended_agents.forEach(key => { enabledAgents[key] = true })
+
     step.value = 'agent_select'
   }
 
