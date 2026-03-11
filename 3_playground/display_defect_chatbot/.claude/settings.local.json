@@ -3,7 +3,9 @@
     "allow": [
       "WebFetch(domain:docs.langchain.com)",
       "WebFetch(domain:langchain-ai.github.io)",
-      "Bash(\"c:/study/langchain_study/3_playground/display_defect_chatbot/ai_server/venv/Scripts/pip.exe\" install aiosmtplib==3.0.2)"
+      "Bash(\"c:/study/langchain_study/3_playground/display_defect_chatbot/ai_server/venv/Scripts/pip.exe\" install aiosmtplib==3.0.2)",
+      "Bash(python -c \"from ai_server.server import app; print\\(''OK''\\)\")",
+      "Bash(python -c \":*)"
     ]
   }
 }
