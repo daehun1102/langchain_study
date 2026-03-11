@@ -36,3 +36,16 @@ def test_hypotheses_response_valid():
 def test_hypotheses_response_missing_field_raises():
     with pytest.raises(ValidationError):
         HypothesesResponse()
+
+
+def test_hypothesis_item_invalid_agent_rejected():
+    """유효하지 않은 에이전트명은 ValidationError 발생"""
+    from pydantic import ValidationError
+    with pytest.raises(ValidationError):
+        HypothesisItem(text="가설1", recommended_agents=["invalid_agent"])
+
+
+def test_hypothesis_item_empty_recommended_agents():
+    """빈 recommended_agents 리스트는 허용됨 (LLM이 빈 목록 반환할 수 있음)"""
+    item = HypothesisItem(text="가설1", recommended_agents=[])
+    assert item.recommended_agents == []

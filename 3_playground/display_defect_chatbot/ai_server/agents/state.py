@@ -5,7 +5,7 @@
 graph.py ↔ 서브에이전트 / synthesis_node 간 circular import를 막기 위해
 TypedDict를 별도 모듈로 분리.
 """
-from typing import Annotated, Optional, TypedDict
+from typing import Annotated, Literal, Optional, TypedDict
 from langchain_core.messages import AnyMessage
 from langgraph.graph.message import add_messages
 from pydantic import BaseModel, Field
@@ -20,8 +20,8 @@ class AgentOutputSchema(BaseModel):
 class HypothesisItem(BaseModel):
     """가설 하나와 추천 에이전트 목록"""
     text: str = Field(description="가설 텍스트")
-    recommended_agents: list[str] = Field(
-        description="추천 에이전트 목록. 유효값: process_history, return_history, test_result, long_term"
+    recommended_agents: list[Literal["process_history", "return_history", "test_result", "long_term"]] = Field(
+        description="추천 에이전트 목록"
     )
 
 
