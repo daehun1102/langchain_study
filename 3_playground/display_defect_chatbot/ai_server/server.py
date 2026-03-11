@@ -70,8 +70,8 @@ class AgentRequest(BaseModel):
 class AgentResponse(BaseModel):
     model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
     action: str
-    # start
-    hypotheses: Optional[list[str]] = None
+    # start — each item: {"text": str, "recommended_agents": list[str]}
+    hypotheses: Optional[list[dict]] = None
     # select_hypothesis
     agent_results: Optional[dict] = None
     long_term_task_id: Optional[str] = None
