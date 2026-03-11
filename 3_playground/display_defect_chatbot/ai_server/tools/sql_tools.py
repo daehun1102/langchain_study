@@ -138,7 +138,7 @@ async def get_bg_task(task_id: str) -> Optional[dict]:
 
 # ── documents 테이블 CRUD ─────────────────────────────────────
 
-async def list_documents() -> list[dict]:
+async def list_documents() -> list[dict[str, Any]]:
     """documents 테이블 전체 조회 (최신 순)"""
     async with get_db_session() as session:
         result = await session.execute(
@@ -162,7 +162,10 @@ async def insert_document(doc_id: str, filename: str, doc_type: str, status: str
             """),
             {"doc_id": doc_id, "filename": filename, "doc_type": doc_type, "status": status},
         )
-        return dict(result.mappings().first())
+        row = result.mappings().first()
+        if row is None:
+            raise RuntimeError(f"insert_document: RETURNING produced no row for doc_id={doc_id!r}")
+        return dict(row)
 
 
 async def delete_document(doc_id: str) -> None:

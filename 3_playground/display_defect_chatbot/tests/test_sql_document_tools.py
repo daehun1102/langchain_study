@@ -1,6 +1,8 @@
 # tests/test_sql_document_tools.py
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
+from ai_server.tools.sql_tools import list_documents, insert_document, delete_document
+
 
 @pytest.mark.asyncio
 async def test_list_documents_returns_list():
@@ -15,7 +17,6 @@ async def test_list_documents_returns_list():
         mock_ctx.return_value.__aenter__ = AsyncMock(return_value=mock_session)
         mock_ctx.return_value.__aexit__ = AsyncMock(return_value=False)
 
-        from ai_server.tools.sql_tools import list_documents
         result = await list_documents()
         assert result == mock_rows
 
@@ -31,7 +32,6 @@ async def test_insert_document_returns_row():
         mock_ctx.return_value.__aenter__ = AsyncMock(return_value=mock_session)
         mock_ctx.return_value.__aexit__ = AsyncMock(return_value=False)
 
-        from ai_server.tools.sql_tools import insert_document
         result = await insert_document("abc", "a.txt", "txt", "INDEXED")
         assert result["doc_id"] == "abc"
         assert result["filename"] == "a.txt"
@@ -44,6 +44,7 @@ async def test_delete_document_executes():
         mock_ctx.return_value.__aenter__ = AsyncMock(return_value=mock_session)
         mock_ctx.return_value.__aexit__ = AsyncMock(return_value=False)
 
-        from ai_server.tools.sql_tools import delete_document
         await delete_document("abc")
         mock_session.execute.assert_called_once()
+        call_args = mock_session.execute.call_args[0]  # positional args tuple
+        assert call_args[1] == {"doc_id": "abc"}
