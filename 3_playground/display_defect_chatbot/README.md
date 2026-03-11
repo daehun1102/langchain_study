@@ -245,8 +245,14 @@ DefectAnalysisState
 ## 실행 방법
 
 ```bash
-# 1. PostgreSQL 실행 후 DB 초기화
-psql -U postgres -d defect_db -f db/init.sql
+# 1. DB 생성 및 초기화
+psql -U postgres -h localhost -c "CREATE DATABASE defect_db;"
+
+# Windows CMD
+set PGCLIENTENCODING=UTF8 && psql -U postgres -h localhost -d defect_db -f db/init.sql
+
+# macOS / Linux
+PGCLIENTENCODING=UTF8 psql -U postgres -h localhost -d defect_db -f db/init.sql
 
 # 2. 환경변수 설정
 cp .env.example .env
@@ -292,9 +298,9 @@ npm run dev
 
 ## DB 설정
 
-### 자동 초기화
+### 초기화
 
-Docker Compose로 실행하면 `db/init.sql`이 자동으로 실행되어 테이블과 Mock 데이터가 생성됩니다.
+`db/init.sql`을 실행하면 테이블과 Mock 데이터가 생성됩니다. 위 실행 방법의 1단계를 참고하세요.
 
 ### DB 구성
 
