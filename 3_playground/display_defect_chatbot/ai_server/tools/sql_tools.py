@@ -134,3 +134,41 @@ async def get_bg_task(task_id: str) -> Optional[dict]:
         )
         row = result.mappings().first()
         return dict(row) if row else None
+
+
+# ── documents 테이블 CRUD ─────────────────────────────────────
+
+async def list_documents() -> list[dict]:
+    """documents 테이블 전체 조회 (최신 순)"""
+    async with get_db_session() as session:
+        result = await session.execute(
+            text("""
+                SELECT doc_id, filename, doc_type, status, created_at
+                FROM documents
+                ORDER BY created_at DESC
+            """)
+        )
+        return [dict(r) for r in result.mappings().all()]
+
+
+async def insert_document(doc_id: str, filename: str, doc_type: str, status: str) -> dict:
+    """documents 테이블에 행 삽입 후 삽입된 행 반환"""
+    async with get_db_session() as session:
+        result = await session.execute(
+            text("""
+                INSERT INTO documents (doc_id, filename, doc_type, status)
+                VALUES (:doc_id, :filename, :doc_type, :status)
+                RETURNING doc_id, filename, doc_type, status, created_at
+            """),
+            {"doc_id": doc_id, "filename": filename, "doc_type": doc_type, "status": status},
+        )
+        return dict(result.mappings().first())
+
+
+async def delete_document(doc_id: str) -> None:
+    """documents 테이블에서 행 삭제"""
+    async with get_db_session() as session:
+        await session.execute(
+            text("DELETE FROM documents WHERE doc_id = :doc_id"),
+            {"doc_id": doc_id},
+        )
