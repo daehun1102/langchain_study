@@ -19,7 +19,7 @@ from ai_server.agents.prompts import (
     HYPOTHESIS_SYSTEM_PROMPT,
     CHAT_SYSTEM_PROMPT,
 )
-from ai_server.agents.state import DefectAnalysisState, SubAgentInput
+from ai_server.agents.state import DefectAnalysisState, SubAgentInput, HypothesesResponse
 from ai_server.agents.sub.process_history import process_history_node
 from ai_server.agents.sub.return_history import return_history_node
 from ai_server.agents.sub.test_result import test_result_node
@@ -32,6 +32,7 @@ from ai_server.infra.vector_store import VectorStoreManager
 settings = get_settings()
 _llm = ChatOpenAI(model=settings.model_name, temperature=0.3)
 _chat_llm = ChatOpenAI(model=settings.model_name, temperature=0.5)
+_hypothesis_llm = _llm.with_structured_output(HypothesesResponse)
 
 _INPUT_KEYS = tuple(SubAgentInput.__annotations__)
 
@@ -47,7 +48,7 @@ ALL_AGENTS: list[str] = list(_NODE_MAP.keys())
 # ── 노드 정의 ──────────────────────────────────────────────────────────────
 
 async def hypothesis_node(state: DefectAnalysisState, config: RunnableConfig) -> dict:
-    """RAG 검색 → 가설 생성 → interrupt(가설 목록) → 선택된 가설 수신"""
+    """RAG 검색 → structured output으로 가설+추천 에이전트 생성 → interrupt → 선택된 가설 수신"""
     vsm: VectorStoreManager = config["configurable"]["vsm"]
     docs = await vsm.similarity_search(state["defect_description"], k=4)
     context = "\n\n".join([d.page_content for d in docs]) if docs else "관련 사례 없음"
@@ -58,29 +59,21 @@ async def hypothesis_node(state: DefectAnalysisState, config: RunnableConfig) ->
             content=f"[보고 회사]: {state['company']}\n[불량 증상]: {state['defect_description']}\n\n[과거 사례 문서]\n{context}"
         ),
     ]
-    response = await _llm.ainvoke(messages)
-    text = response.content.strip()
+    response: HypothesesResponse = await _hypothesis_llm.ainvoke(messages)
+    hypotheses_data = [h.model_dump() for h in response.hypotheses]
 
-    hypotheses = []
-    for line in text.split("\n"):
-        line = line.strip()
-        if line.startswith("가설") and ":" in line:
-            hypotheses.append(line)
-    if not hypotheses:
-        hypotheses = [text]
-
-    # interrupt: 클라이언트에 가설 목록 반환
+    # interrupt: 클라이언트에 가설 목록(text + recommended_agents) 반환
     # resume 값은 {"selected_hypothesis": str, "enabled_agents": list} 형태의 dict
-    resume = interrupt({"hypotheses": hypotheses})
+    resume = interrupt({"hypotheses": hypotheses_data})
 
     if isinstance(resume, dict):
         selected = resume.get("selected_hypothesis", "")
         enabled = resume.get("enabled_agents")
     else:
-        selected = resume
+        selected = str(resume)
         enabled = None
 
-    result: dict = {"hypotheses": hypotheses, "selected_hypothesis": selected}
+    result: dict = {"hypotheses": hypotheses_data, "selected_hypothesis": selected}
     if enabled is not None:
         result["enabled_agents"] = enabled
     if isinstance(resume, dict) and resume.get("notify_email") is not None:
