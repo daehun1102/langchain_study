@@ -16,7 +16,7 @@
         @click="$emit('select', h)"
       >
         <span class="hyp-num">{{ String(i + 1).padStart(2, '0') }}</span>
-        <span class="hyp-text">{{ h }}</span>
+        <span class="hyp-text">{{ h.text }}</span>
         <svg class="hyp-arrow" viewBox="0 0 16 16" fill="none" width="15" height="15">
           <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
