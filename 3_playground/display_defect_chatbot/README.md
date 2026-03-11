@@ -14,10 +14,7 @@
 [Frontend]  Vue 3 + Vite  :5174
     │  /api/* → proxy
     ▼
-[Backend]  Spring Boot  :8080
-    │  /internal/*
-    ▼
-[AI Server]  FastAPI + LangGraph  :8000
+[ai_server]  FastAPI + LangGraph  :8000
     │
     ├─ RAG (pgvector)
     ├─ Stateful Graph (AsyncPostgresSaver)
@@ -240,130 +237,49 @@ DefectAnalysisState
 | 레이어 | 기술 |
 |---|---|
 | Frontend | Vue 3, Vite |
-| Backend | Spring Boot, Java 17 |
-| AI Server | FastAPI, LangGraph 1.x, LangChain, OpenAI GPT-4o-mini |
+| ai_server | FastAPI, LangGraph 1.x, LangChain, OpenAI GPT-4o-mini |
 | Persistence | PostgreSQL 16 + pgvector (앱 DB + LangGraph 체크포인트 공용) |
 
 ---
 
-## Docker로 전체 실행
-
-### 1. 환경변수 설정
+## 실행 방법
 
 ```bash
+# 1. PostgreSQL 실행 후 DB 초기화
+psql -U postgres -d defect_db -f db/init.sql
+
+# 2. 환경변수 설정
 cp .env.example .env
-```
+# .env에 OPENAI_API_KEY 입력
 
-`.env` 파일을 열고 OpenAI API 키를 입력합니다:
-
-```env
-OPENAI_API_KEY=sk-...
-```
-
-나머지 값은 기본값으로 Docker Compose와 연동됩니다.
-
-### 2. 실행
-
-```bash
-docker compose up --build
-```
-
-| 서비스 | 호스트 접속 주소 |
-|---|---|
-| Frontend | http://localhost:5175 |
-| Backend API | http://localhost:8081 |
-| AI Server API | http://localhost:8001 |
-| PostgreSQL | localhost:5433 |
-
-### 3. 종료
-
-```bash
-docker compose down
-```
-
-DB 볼륨(앱 데이터 + LangGraph 체크포인트)까지 초기화:
-
-```bash
-docker compose down -v
-```
-
----
-
-## 로컬 개발 (터미널별 서버 실행)
-
-### 사전 준비
-
-- Python 3.11+
-- Java 17+, Maven 3.8+
-- Node.js 20+
-
-### DB만 Docker로 실행
-
-```bash
-docker compose up postgres -d
-```
-
-PostgreSQL이 `localhost:5433`에서 실행됩니다.
-
-### 터미널 1 — AI Server
-
-```bash
-cd display_defect_chatbot
-
-# 최초 1회: 가상환경 생성 및 패키지 설치
-python -m venv .venv
-source .venv/bin/activate        # Windows: .venv\Scripts\activate
+# 3. ai_server 실행
 pip install -r ai_server/requirements.txt
+uvicorn ai_server.server:app --host 0.0.0.0 --port 8000
 
-# .env의 POSTGRES_HOST를 localhost로 변경 (로컬 개발 시)
-# POSTGRES_HOST=localhost
-# POSTGRES_PORT=5433
-
-uvicorn ai_server.server:app --reload --port 8000
-```
-
-> 시작 시 LangGraph 체크포인트 테이블(`checkpoints`, `checkpoint_blobs`, `checkpoint_writes`)이 자동 생성됩니다.
-
-### 터미널 2 — Backend
-
-```bash
-cd display_defect_chatbot/backend
-mvn spring-boot:run
-```
-
-Windows PowerShell:
-```powershell
-$env:POSTGRES_HOST="localhost"; $env:POSTGRES_PORT="5433"
-$env:INTERNAL_AI_SERVER_URL="http://localhost:8000"
-mvn spring-boot:run
-```
-
-### 터미널 3 — Frontend
-
-```bash
-cd display_defect_chatbot/frontend
+# 4. frontend 실행
+cd frontend
 npm install
 npm run dev
 ```
 
-> `vite.config.js` proxy target이 `http://backend:8080`으로 설정되어 있습니다.
-> 로컬 개발 시 `http://localhost:8080`으로 변경이 필요합니다.
+> 시작 시 LangGraph 체크포인트 테이블(`checkpoints`, `checkpoint_blobs`, `checkpoint_writes`)이 자동 생성됩니다.
 
 ---
 
 ## API 레퍼런스
 
-### AI Server (내부용)
+### ai_server
 
 | Method | Path | 설명 |
 |---|---|---|
-| `POST` | `/internal/agent` | 그래프 start / resume (action 기반) |
-| `GET` | `/internal/bg-status/{task_id}` | 장기이력 백그라운드 작업 상태 |
-| `POST` | `/internal/ingest` | RAG 문서 색인 |
-| `DELETE` | `/internal/delete/{doc_id}` | RAG 문서 삭제 |
-| `GET` | `/internal/health` | 헬스체크 |
+| `POST` | `/api/chat/agent` | 그래프 start / resume (action 기반) |
+| `GET` | `/api/chat/bg-status/{task_id}` | 장기이력 백그라운드 작업 상태 |
+| `GET` | `/api/documents` | RAG 문서 목록 조회 |
+| `POST` | `/api/documents` | RAG 문서 업로드 및 색인 |
+| `DELETE` | `/api/documents/{doc_id}` | RAG 문서 삭제 |
+| `GET` | `/api/health` | 헬스체크 |
 
-#### `/internal/agent` action 종류
+#### `/api/chat/agent` action 종류
 
 | action | 요청 필드 | 응답 필드 |
 |---|---|---|
@@ -371,13 +287,6 @@ npm run dev
 | `select_hypothesis` | selectedHypothesis, enabledAgents | agentResults, longTermTaskId |
 | `resume_long_term` | longTermResult | finalActionPlan |
 | `chat` | userMessage | reply |
-
-### Backend (프론트용)
-
-| Method | Path | 설명 |
-|---|---|---|
-| `POST` | `/api/chat/agent` | AI Server `/internal/agent` 프록시 |
-| `GET` | `/api/chat/bg-status/{taskId}` | 장기이력 상태 프록시 |
 
 ---
 
@@ -410,7 +319,7 @@ AI Server 실행 후 mock 데이터를 pgvector에 색인합니다:
 ```bash
 for f in corrective_action_guide display_failure_cases equipment_sop \
           oled_amoled_failure_cases process_failure_history quality_standards; do
-  curl -X POST "http://localhost:8000/internal/ingest?doc_id=$f" \
+  curl -X POST "http://localhost:8000/api/documents" \
     -F "file=@ai_server/mock_data/${f}.txt"
 done
 ```
@@ -422,7 +331,7 @@ done
 | 변수 | 기본값 | 설명 |
 |---|---|---|
 | `OPENAI_API_KEY` | (필수) | OpenAI API 키 |
-| `POSTGRES_HOST` | `postgres` | DB 호스트 (Docker: `postgres`, 로컬: `localhost`) |
+| `POSTGRES_HOST` | `localhost` | DB 호스트 |
 | `POSTGRES_PORT` | `5432` | DB 포트 |
 | `POSTGRES_USER` | `postgres` | DB 사용자 |
 | `POSTGRES_PASSWORD` | `1234` | DB 비밀번호 |
@@ -433,4 +342,3 @@ done
 | `LOG_GRAPH_TARGET` | `console` | 로그 출력 대상 (`console` / `file` / `both`) |
 | `LOG_GRAPH_FILE` | `logs/graph.log` | 로그 파일 경로 |
 | `LOG_GRAPH_LEVEL` | `INFO` | 로그 레벨 |
-| `INTERNAL_AI_SERVER_URL` | `http://localhost:8000` | Backend → AI Server URL |

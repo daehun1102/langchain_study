@@ -249,7 +249,7 @@ async def upload_document(request: Request, file: UploadFile = File(...)):
     )
 
 
-@app.delete("/api/documents/{doc_id}", response_model=DocumentResponse)
+@app.delete("/api/documents/{doc_id}", response_model=DocumentResponse, response_model_by_alias=True)
 async def delete_doc(doc_id: str, request: Request):
     rows = await list_documents()
     doc = next((r for r in rows if r["doc_id"] == doc_id), None)
