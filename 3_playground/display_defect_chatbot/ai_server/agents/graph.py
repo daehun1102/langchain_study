@@ -19,6 +19,7 @@ from ai_server.agents.prompts import (
     HYPOTHESIS_SYSTEM_PROMPT,
     CHAT_SYSTEM_PROMPT,
 )
+from ai_server.agents.registry import AgentKey, AGENT_NODE_MAP
 from ai_server.agents.state import DefectAnalysisState, SubAgentInput, HypothesesResponse
 from ai_server.agents.sub.process_history import process_history_node
 from ai_server.agents.sub.return_history import return_history_node
@@ -36,13 +37,8 @@ _hypothesis_llm = _llm.with_structured_output(HypothesesResponse)
 
 _INPUT_KEYS = tuple(SubAgentInput.__annotations__)
 
-_NODE_MAP = {
-    "process_history": "process_history_node",
-    "return_history":  "return_history_node",
-    "test_history":    "test_history_node",
-    "long_term":       "long_term_node",
-}
-ALL_AGENTS: list[str] = list(_NODE_MAP.keys())
+_NODE_MAP: dict[AgentKey, str] = AGENT_NODE_MAP
+ALL_AGENTS: list[AgentKey] = list(AgentKey)
 
 
 # ── 노드 정의 ──────────────────────────────────────────────────────────────
