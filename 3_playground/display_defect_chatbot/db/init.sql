@@ -51,8 +51,8 @@ CREATE TABLE IF NOT EXISTS return_history (
     severity      VARCHAR(20)
 );
 
--- 테스트결과 (TestResultAgent)
-CREATE TABLE IF NOT EXISTS test_results (
+-- 테스트이력 (TestHistoryAgent)
+CREATE TABLE IF NOT EXISTS test_history (
     id              BIGSERIAL PRIMARY KEY,
     product_id      VARCHAR(50),
     test_type       VARCHAR(100),
@@ -260,7 +260,7 @@ INSERT INTO return_history (product_id, return_reason, return_date, quantity, se
 -- 테스트결과
 -- ══════════════════════════════════════════════════════════════════
 
-INSERT INTO test_results (product_id, test_type, result, measured_value, spec_min, spec_max, tested_at) VALUES
+INSERT INTO test_history (product_id, test_type, result, measured_value, spec_min, spec_max, tested_at) VALUES
 
   -- ── LOT-A001: Dead Pixel (7건) ──────────────────────────────────
   ('LOT-A001', 'Vth-Uniformity',          'FAIL', 2.85, 1.00, 2.50, '2025-10-03 09:00:00'),

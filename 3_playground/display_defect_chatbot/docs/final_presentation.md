@@ -1,3 +1,11 @@
+---
+title: "test"
+author: "대훈"
+date: "2026-03-11"
+output: pdf_document
+---
+
+
 # Display Defect Chatbot — 발표 자료
 
 ### 목차
@@ -119,7 +127,7 @@ flowchart TD
         B["route_to_agents"]
         B --> C1["공정 이력 분석<br>process_history_node"]
         B --> C2["반품 이력 분석<br>return_history_node"]
-        B --> C3["검사 결과 분석<br>test_result_node"]
+        B --> C3["검사 결과 분석<br>test_history_node"]
         B --> C4["장기 이력 요청<br>long_term_node"]
     end
 
@@ -208,7 +216,7 @@ flowchart LR
     subgraph B["StateGraph ✅"]
         S["route_to_agents"] --> L["process_history_node"]
         S --> R["return_history_node"]
-        S --> TS["test_result_node"]
+        S --> TS["test_history_node"]
         S --> LT["long_term_node"]
         L & R & TS & LT --> J["await_long_term_node"]
     end
@@ -270,7 +278,7 @@ flowchart LR
     subgraph B["StateGraph ✅"]
         B1["process_history_node"] --> B4["await_long_term_node<br>(join)"]
         B2["return_history_node"] --> B4
-        B3["test_result_node"] --> B4
+        B3["test_history_node"] --> B4
         B5["long_term_node"] --> B4
         B4 --> B6["final_synthesis_node"]
     end

@@ -8,7 +8,7 @@ HYPOTHESIS_SYSTEM_PROMPT = """당신은 삼성 디스플레이 제조 공정 전
 사용 가능한 에이전트:
 - process_history: 제조 공정 단계별 측정 이력 분석
 - return_history: 반품/반송 이력 및 패턴 분석
-- test_result: 전기·광학 테스트 결과 및 규격 초과 여부 분석
+- test_history: 전기·광학 테스트 결과 및 규격 초과 여부 분석
 - long_term: 6개월 장기 불량 트렌드 분석 (시간이 오래 걸림)
 
 각 가설마다 해당 가설 검증에 가장 적합한 에이전트를 1개 이상 추천하세요."""

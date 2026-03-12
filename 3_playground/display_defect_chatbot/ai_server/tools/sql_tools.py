@@ -32,9 +32,9 @@ _RETURN_HISTORY_SQL = """
     LIMIT 10
 """
 
-_TEST_RESULTS_SQL = """
+_TEST_HISTORY_SQL = """
     SELECT test_type, result, measured_value, spec_min, spec_max, tested_at
-    FROM test_results
+    FROM test_history
     WHERE product_id = :pid
     ORDER BY tested_at DESC
     LIMIT 20
@@ -53,9 +53,9 @@ async def query_return_history(product_id: str) -> list[dict[str, Any]]:
     return await _query_by_product_id(_RETURN_HISTORY_SQL, product_id)
 
 
-async def query_test_results(product_id: str) -> list[dict[str, Any]]:
-    """테스트결과 테이블 조회"""
-    return await _query_by_product_id(_TEST_RESULTS_SQL, product_id)
+async def query_test_history(product_id: str) -> list[dict[str, Any]]:
+    """테스트이력 테이블 조회"""
+    return await _query_by_product_id(_TEST_HISTORY_SQL, product_id)
 
 
 async def query_long_term_history(product_id: str) -> str:

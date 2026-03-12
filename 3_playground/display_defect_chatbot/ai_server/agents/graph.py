@@ -22,7 +22,7 @@ from ai_server.agents.prompts import (
 from ai_server.agents.state import DefectAnalysisState, SubAgentInput, HypothesesResponse
 from ai_server.agents.sub.process_history import process_history_node
 from ai_server.agents.sub.return_history import return_history_node
-from ai_server.agents.sub.test_result import test_result_node
+from ai_server.agents.sub.test_history import test_history_node
 from ai_server.agents.sub.long_term import long_term_node
 from ai_server.agents.synthesis_node import final_synthesis_node
 from ai_server.config import get_settings
@@ -39,7 +39,7 @@ _INPUT_KEYS = tuple(SubAgentInput.__annotations__)
 _NODE_MAP = {
     "process_history": "process_history_node",
     "return_history":  "return_history_node",
-    "test_result":     "test_result_node",
+    "test_history":    "test_history_node",
     "long_term":       "long_term_node",
 }
 ALL_AGENTS: list[str] = list(_NODE_MAP.keys())
@@ -94,7 +94,7 @@ async def await_long_term_node(state: DefectAnalysisState) -> dict:
     agent_results = {
         "process_history": state.get("process_history_result"),
         "return_history":  state.get("return_history_result"),
-        "test_result":     state.get("test_result"),
+        "test_history":    state.get("test_history_result"),
     }
     task_id = state.get("long_term_task_id")
 
@@ -146,7 +146,7 @@ def build_investigation_graph(checkpointer):
     builder.add_node("hypothesis_node",       apply_middleware(hypothesis_node,       "hypothesis_node",       mw))
     builder.add_node("process_history_node",  apply_middleware(process_history_node,  "process_history_node",  mw))
     builder.add_node("return_history_node",   apply_middleware(return_history_node,   "return_history_node",   mw))
-    builder.add_node("test_result_node",      apply_middleware(test_result_node,      "test_result_node",      mw))
+    builder.add_node("test_history_node",     apply_middleware(test_history_node,     "test_history_node",     mw))
     builder.add_node("long_term_node",        apply_middleware(long_term_node,        "long_term_node",        mw))
     builder.add_node("await_long_term_node",  apply_middleware(await_long_term_node,  "await_long_term_node",  mw))
     builder.add_node("final_synthesis_node",  apply_middleware(final_synthesis_node,  "final_synthesis_node",  mw))
@@ -159,7 +159,7 @@ def build_investigation_graph(checkpointer):
     # 병렬 에이전트 → await_long_term (LangGraph: 모든 선행 노드 완료 후 실행)
     builder.add_edge("process_history_node", "await_long_term_node")
     builder.add_edge("return_history_node",  "await_long_term_node")
-    builder.add_edge("test_result_node",     "await_long_term_node")
+    builder.add_edge("test_history_node",    "await_long_term_node")
     builder.add_edge("long_term_node",       "await_long_term_node")
 
     # await_long_term → synthesis → chat (loop)

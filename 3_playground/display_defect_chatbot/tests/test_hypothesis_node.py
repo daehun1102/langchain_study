@@ -12,7 +12,7 @@ def make_mock_response():
         hypotheses=[
             HypothesisItem(
                 text="가설1: 공정 오염 — 증착 챔버 파티클",
-                recommended_agents=["process_history", "test_result"],
+                recommended_agents=["process_history", "test_history"],
             ),
             HypothesisItem(
                 text="가설2: 전극 단선 — 식각 과도",
@@ -29,7 +29,7 @@ def test_model_dump_produces_correct_list():
 
     assert len(hypotheses_data) == 2
     assert hypotheses_data[0]["text"] == "가설1: 공정 오염 — 증착 챔버 파티클"
-    assert hypotheses_data[0]["recommended_agents"] == ["process_history", "test_result"]
+    assert hypotheses_data[0]["recommended_agents"] == ["process_history", "test_history"]
 
 
 def test_interrupt_payload_has_required_keys():
@@ -47,10 +47,10 @@ def test_resume_dict_extracts_correctly():
     """resume dict에서 selected_hypothesis, enabled_agents 추출 검증"""
     resume = {
         "selected_hypothesis": "가설1: 공정 오염",
-        "enabled_agents": ["process_history", "test_result"],
+        "enabled_agents": ["process_history", "test_history"],
     }
     assert resume.get("selected_hypothesis") == "가설1: 공정 오염"
-    assert resume.get("enabled_agents") == ["process_history", "test_result"]
+    assert resume.get("enabled_agents") == ["process_history", "test_history"]
 
 
 def test_hypothesis_llm_exists_in_graph():

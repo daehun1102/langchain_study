@@ -64,7 +64,7 @@ const enabledCount = computed(() => Object.values(props.enabledAgents).filter(Bo
 const COLORS = {
   process_history: '#00c8ff',
   return_history:  '#f59e0b',
-  test_result:     '#10b981',
+  test_history:    '#10b981',
   long_term:       '#a78bfa',
 }
 function agentColor(key) { return COLORS[key] || '#60a5fa' }

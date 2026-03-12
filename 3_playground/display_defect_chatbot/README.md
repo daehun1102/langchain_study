@@ -105,7 +105,7 @@ hypothesis_node (interrupt 반환값 수신)
   └─ route_to_agents (conditional edge)
        ├─ Send("process_history_node", sub_state)  ─┐
        ├─ Send("return_history_node",  sub_state)   ├─ LangGraph Send API
-       ├─ Send("test_result_node",     sub_state)   │  (병렬 팬아웃)
+       ├─ Send("test_history_node",     sub_state)   │  (병렬 팬아웃)
        └─ Send("long_term_node",       sub_state)  ─┘ (enabled 시에만)
 
        ↓ 모든 선행 노드 완료 후 자동 fan-in ↓
@@ -128,7 +128,7 @@ hypothesis_node
      │
      ├─ process_history_node ──┐
      ├─ return_history_node    ├─ (전부 완료) → await_long_term_node
-     ├─ test_result_node       │
+     ├─ test_history_node       │
      └─ long_term_node        ─┘
 ```
 
@@ -142,7 +142,7 @@ graph.ainvoke(Command(resume=long_term_result), config={thread_id: session_id})
 await_long_term_node (interrupt 반환값 수신)
   ├─ long_term_result 상태 업데이트
   └─→ final_synthesis_node
-        ├─ process_history_result + return_history_result + test_result + long_term_result
+        ├─ process_history_result + return_history_result + test_history_result + long_term_result
         ├─ LLM으로 최종 액션 플랜 생성
         └─→ chat_node
               └─ interrupt({"final_action_plan": "..."})
@@ -220,7 +220,7 @@ DefectAnalysisState
 ├─ hypotheses, selected_hypothesis                        ← hypothesis_node 완료 시
 ├─ process_history_result                                 ← process_history_node 완료 시
 ├─ return_history_result                                  ← return_history_node 완료 시
-├─ test_result                                            ← test_result_node 완료 시
+├─ test_history_result                                    ← test_history_node 완료 시
 ├─ long_term_task_id                                      ← long_term_node 완료 시
 ├─ long_term_result                                       ← resume_long_term 수신 시
 ├─ final_action_plan                                      ← final_synthesis_node 완료 시
@@ -310,7 +310,7 @@ npm run dev
 | `defect_cases` | 불량 케이스 (Dead Pixel, Hot Pixel 등) |
 | `process_history` | 공정이력 (CVD, Photo, Etch 등) |
 | `return_history` | 반송이력 (반송 사유, 수량, 심각도) |
-| `test_results` | 테스트 결과 (측정값, 스펙 범위) |
+| `test_history` | 테스트 이력 (측정값, 스펙 범위) |
 | `background_tasks` | 장기이력 백그라운드 작업 추적 |
 | `langchain_pg_collection` | pgvector RAG 문서 컬렉션 |
 | `langchain_pg_embedding` | pgvector 임베딩 벡터 |

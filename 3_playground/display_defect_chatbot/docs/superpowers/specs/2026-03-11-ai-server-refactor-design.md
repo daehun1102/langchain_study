@@ -44,7 +44,7 @@ ai_server/
 │   └── sub/
 │       ├── process_history.py
 │       ├── return_history.py
-│       ├── test_result.py
+│       ├── test_history.py
 │       └── long_term.py
 │
 ├── tools/                       ← LangChain 도구
@@ -219,7 +219,7 @@ async def get_bg_status(task_id: str):
 
 | 함수 | 이동 위치 |
 |---|---|
-| `query_process_history`, `query_return_history`, `query_test_results`, `query_long_term_history` | `repositories/agent_queries.py` |
+| `query_process_history`, `query_return_history`, `query_test_history`, `query_long_term_history` | `repositories/agent_queries.py` |
 | `list_documents`, `insert_document`, `delete_document` | `repositories/document_repo.py` |
 | `insert_bg_task`, `complete_bg_task`, `fail_bg_task`, `get_bg_task` | `repositories/bg_task_repo.py` |
 
@@ -233,7 +233,7 @@ async def get_bg_status(task_id: str):
 |---|---|---|
 | `agents/sub/process_history.py` | `from ai_server.tools.sql_tools import query_process_history` | `from ai_server.repositories.agent_queries import query_process_history` |
 | `agents/sub/return_history.py` | `from ai_server.tools.sql_tools import query_return_history` | `from ai_server.repositories.agent_queries import query_return_history` |
-| `agents/sub/test_result.py` | `from ai_server.tools.sql_tools import query_test_results` | `from ai_server.repositories.agent_queries import query_test_results` |
+| `agents/sub/test_history.py` | `from ai_server.tools.sql_tools import query_test_history` | `from ai_server.repositories.agent_queries import query_test_history` |
 | `agents/sub/long_term.py` | `from ai_server.tools.sql_tools import query_long_term_history, insert_bg_task, complete_bg_task, fail_bg_task` | `from ai_server.repositories.agent_queries import query_long_term_history` + `from ai_server.repositories.bg_task_repo import insert_bg_task, complete_bg_task, fail_bg_task` |
 | `server.py` (분해 과정에서 제거) | `from ai_server.tools.sql_tools import get_bg_task, list_documents, insert_document, delete_document` | 핸들러가 `api/chat.py`, `api/documents.py`로 이동하면서 자동 해소. 각 라우터/서비스에서 repo 직접 참조. |
 

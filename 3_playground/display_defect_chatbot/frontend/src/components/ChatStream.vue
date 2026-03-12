@@ -106,7 +106,7 @@ const COL_DEFS = {
     { field: 'quantity', headerName: '수량' },
     { field: 'return_date', headerName: '반송일' },
   ],
-  test_result: [
+  test_history: [
     { field: 'test_type', headerName: '테스트 유형' },
     { field: 'result', headerName: '결과', cellClass: p => p.value === 'FAIL' ? 'cell-fail' : 'cell-pass' },
     { field: 'measured_value', headerName: '측정값' },
@@ -121,7 +121,7 @@ function getColDefs(agentKey) { return COL_DEFS[agentKey] || [] }
 const AGENT_COLORS = {
   process_history: '#00c8ff',
   return_history:  '#f59e0b',
-  test_result:     '#10b981',
+  test_history:    '#10b981',
   long_term:       '#a78bfa',
 }
 

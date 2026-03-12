@@ -31,7 +31,7 @@ async def final_synthesis_node(state: DefectAnalysisState) -> dict:
 {_fmt(state.get("return_history_result"))}
 
 [테스트결과 에이전트 분석]
-{_fmt(state.get("test_result"))}
+{_fmt(state.get("test_history_result"))}
 
 [장기이력 분석]
 {state.get("long_term_result") or "데이터 없음"}

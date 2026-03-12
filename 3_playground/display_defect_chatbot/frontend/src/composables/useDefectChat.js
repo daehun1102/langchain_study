@@ -12,7 +12,7 @@ function uuidv4() {
 export const AGENT_CONFIG = [
   { key: 'process_history', label: '공정이력', icon: '⚙️', desc: '제품 제조 공정 단계별 이력을 조회하고 FAIL 항목 및 이상 공정을 분석합니다.' },
   { key: 'return_history',  label: '반송이력', icon: '↩️', desc: '고객·공정 반송 이력을 조회하고 가설과 연관된 반복 불량 패턴을 분석합니다.' },
-  { key: 'test_result',     label: '테스트결과', icon: '🧪', desc: '전기·광학 테스트 결과를 조회하고 규격 초과 항목을 식별합니다.' },
+  { key: 'test_history',    label: '테스트이력', icon: '🧪', desc: '전기·광학 테스트 결과를 조회하고 규격 초과 항목을 식별합니다.' },
   { key: 'long_term',       label: '장기이력',  icon: '📊', desc: '동일 모델 최근 6개월 불량 통계를 분석합니다. (백그라운드 실행)' },
 ]
 

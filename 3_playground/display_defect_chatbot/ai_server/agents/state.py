@@ -20,7 +20,7 @@ class AgentOutputSchema(BaseModel):
 class HypothesisItem(BaseModel):
     """가설 하나와 추천 에이전트 목록"""
     text: str = Field(description="가설 텍스트")
-    recommended_agents: list[Literal["process_history", "return_history", "test_result", "long_term"]] = Field(
+    recommended_agents: list[Literal["process_history", "return_history", "test_history", "long_term"]] = Field(
         description="추천 에이전트 목록"
     )
 
@@ -64,7 +64,7 @@ class DefectAnalysisState(TypedDict):
     # ── 에이전트 결과 (reducer: 최신값으로 교체) ──
     process_history_result: Annotated[Optional[AgentAnalysisResult], lambda _, u: u]
     return_history_result:  Annotated[Optional[AgentAnalysisResult], lambda _, u: u]
-    test_result:            Annotated[Optional[AgentAnalysisResult], lambda _, u: u]
+    test_history_result:    Annotated[Optional[AgentAnalysisResult], lambda _, u: u]
     long_term_task_id:      Annotated[Optional[str], lambda _, u: u]
     long_term_result:       Annotated[Optional[str], lambda _, u: u]
 

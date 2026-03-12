@@ -19,7 +19,7 @@ Structured output용 Pydantic 모델 추가:
 class HypothesisItem(BaseModel):
     text: str = Field(description="가설 텍스트")
     recommended_agents: list[str] = Field(
-        description="추천 에이전트 목록. 유효값: process_history, return_history, test_result, long_term"
+        description="추천 에이전트 목록. 유효값: process_history, return_history, test_history, long_term"
     )
 
 class HypothesesResponse(BaseModel):
@@ -53,7 +53,7 @@ HYPOTHESIS_SYSTEM_PROMPT = """당신은 삼성 디스플레이 제조 공정 전
 사용 가능한 에이전트:
 - process_history: 제조 공정 단계별 측정 이력 분석
 - return_history: 반품/반송 이력 및 패턴 분석
-- test_result: 전기·광학 테스트 결과 및 규격 초과 여부 분석
+- test_history: 전기·광학 테스트 결과 및 규격 초과 여부 분석
 - long_term: 6개월 장기 불량 트렌드 분석 (시간이 오래 걸림)
 
 각 가설마다 해당 가설 검증에 가장 적합한 에이전트를 1개 이상 추천하세요."""
@@ -142,7 +142,7 @@ hypothesis_node
 - `AgentSelector.vue`: enabledAgents 객체 그대로 사용
 - `runAgents()`: resume 페이로드 형식 동일
 - `route_to_agents()`: enabled_agents 처리 로직 동일
-- 하위 에이전트(process_history, return_history, test_result, long_term): 변경 없음
+- 하위 에이전트(process_history, return_history, test_history, long_term): 변경 없음
 - checkpointer, RAG, synthesis_node: 변경 없음
 
 ## 파일 변경 요약

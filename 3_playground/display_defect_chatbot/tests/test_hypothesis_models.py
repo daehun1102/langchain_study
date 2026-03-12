@@ -7,10 +7,10 @@ from ai_server.agents.state import HypothesisItem, HypothesesResponse
 def test_hypothesis_item_valid():
     item = HypothesisItem(
         text="가설1: 공정 오염 — 증착 공정 중 파티클 유입",
-        recommended_agents=["process_history", "test_result"],
+        recommended_agents=["process_history", "test_history"],
     )
     assert item.text == "가설1: 공정 오염 — 증착 공정 중 파티클 유입"
-    assert item.recommended_agents == ["process_history", "test_result"]
+    assert item.recommended_agents == ["process_history", "test_history"]
 
 
 def test_hypothesis_item_model_dump():

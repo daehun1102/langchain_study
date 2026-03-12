@@ -157,7 +157,7 @@ async def agent_endpoint(req: AgentRequest, request: Request):
             "selected_hypothesis": "",
             "process_history_result": None,
             "return_history_result": None,
-            "test_result": None,
+            "test_history_result": None,
             "long_term_task_id": None,
             "long_term_result": None,
             "final_action_plan": "",
