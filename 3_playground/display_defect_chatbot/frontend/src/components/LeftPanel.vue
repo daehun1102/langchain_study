@@ -162,12 +162,14 @@ function formatDate(iso) {
   background: none;
   border: none;
   cursor: pointer;
-  font-size: 0.9rem;
-  opacity: 0.5;
-  padding: 0;
+  font-size: 0.85rem;
+  color: #6b7280;
+  padding: 2px 4px;
   line-height: 1;
+  border-radius: 3px;
+  flex-shrink: 0;
 }
-.btn-delete:hover { opacity: 1; }
+.btn-delete:hover { color: #f87171; background: rgba(248,113,113,0.1); }
 
 .card-time { font-size: 0.72rem; color: #4b5563; margin-top: 6px; }
 
