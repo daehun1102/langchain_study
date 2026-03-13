@@ -192,7 +192,10 @@ export function useDefectChat() {
       hypotheses.value = Array.isArray(session.hypotheses) ? session.hypotheses : []
       loading.value = false
       error.value = null
-      step.value = session.step || 'result'
+      // step 복원: DB 값 우선, 없으면 결과 유무로 판단
+      const hasResults = chatMessages.value.length > 0 ||
+        AGENT_CONFIG.some(a => agentResults[a.key] !== null)
+      step.value = session.step || (hasResults ? 'result' : 'input')
 
       if (longTermTaskId.value && longTermStatus.value === 'PENDING') {
         resumePollBgStatus(longTermTaskId.value)
@@ -262,7 +265,7 @@ export function useDefectChat() {
       })
       hypotheses.value = data.hypotheses || []
       step.value = 'hypotheses'
-      saveCurrentSession()
+      await saveCurrentSession()
     } catch (e) {
       error.value = e.message
     } finally {
@@ -270,7 +273,7 @@ export function useDefectChat() {
     }
   }
 
-  function selectHypothesis(h) {
+  async function selectHypothesis(h) {
     selectedHypothesis.value = h.text
 
     // 가설 선택 시 전체 초기화 후 추천 에이전트만 ON (이후 수동 변경 가능)
@@ -278,11 +281,12 @@ export function useDefectChat() {
     h.recommended_agents.forEach(key => { enabledAgents[key] = true })
 
     step.value = 'agent_select'
-    saveCurrentSession()
+    await saveCurrentSession()
   }
 
-  function goBackToHypotheses() {
+  async function goBackToHypotheses() {
     step.value = 'hypotheses'
+    await saveCurrentSession()
   }
 
   async function runAgents() {
