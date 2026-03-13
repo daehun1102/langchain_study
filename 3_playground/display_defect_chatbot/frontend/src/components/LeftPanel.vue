@@ -42,7 +42,7 @@
             :aria-label="`세션 삭제: ${session.title || session.id}`"
             :title="`세션 삭제: ${session.title || session.id}`"
             @click.stop="$emit('delete-session', session.id)"
-          >🗑</button>
+          >✕</button>
         </div>
         <div class="card-time">{{ formatDate(session.updatedAt) }}</div>
       </div>
