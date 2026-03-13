@@ -23,7 +23,7 @@ async def upsert_session(id: str, data: dict) -> dict:
                     final_action_plan
                 ) VALUES (
                     :id, :title, :product_id, :defect_description, :hypothesis,
-                    :agent_results::jsonb, :chat_messages::jsonb, :enabled_agents::jsonb,
+                    CAST(:agent_results AS jsonb), CAST(:chat_messages AS jsonb), CAST(:enabled_agents AS jsonb),
                     :long_term_task_id, :long_term_status, :long_term_result,
                     :final_action_plan
                 )

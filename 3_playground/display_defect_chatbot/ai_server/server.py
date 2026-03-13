@@ -25,6 +25,7 @@ from ai_server.infra.ingest import ingest_document
 from ai_server.infra.vector_store import VectorStoreManager
 from ai_server.tools.sql_tools import get_bg_task, list_documents, insert_document, delete_document as _delete_document_db
 import uuid as _uuid
+from ai_server.api.sessions import router as sessions_router
 
 settings = get_settings()
 
@@ -47,6 +48,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(sessions_router)
 
 
 # ── Request / Response Models ──────────────────────────────────────────────
