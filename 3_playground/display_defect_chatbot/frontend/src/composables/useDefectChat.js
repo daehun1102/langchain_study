@@ -125,6 +125,8 @@ export function useDefectChat() {
       longTermStatus: longTermStatus.value,
       longTermResult: longTermResult.value,
       finalActionPlan: finalActionPlan.value,
+      step: step.value,
+      hypotheses: JSON.parse(JSON.stringify(hypotheses.value)),
     }
 
     try {
@@ -184,9 +186,10 @@ export function useDefectChat() {
       longTermStatus.value = session.longTermStatus || 'PENDING'
       longTermResult.value = session.longTermResult || null
       finalActionPlan.value = session.finalActionPlan || ''
+      hypotheses.value = Array.isArray(session.hypotheses) ? session.hypotheses : []
       loading.value = false
       error.value = null
-      step.value = 'result'
+      step.value = session.step || 'result'
 
       if (longTermTaskId.value && longTermStatus.value === 'PENDING') {
         resumePollBgStatus(longTermTaskId.value)
@@ -251,6 +254,7 @@ export function useDefectChat() {
       })
       hypotheses.value = data.hypotheses || []
       step.value = 'hypotheses'
+      saveCurrentSession()
     } catch (e) {
       error.value = e.message
     } finally {
@@ -266,6 +270,7 @@ export function useDefectChat() {
     h.recommended_agents.forEach(key => { enabledAgents[key] = true })
 
     step.value = 'agent_select'
+    saveCurrentSession()
   }
 
   function goBackToHypotheses() {

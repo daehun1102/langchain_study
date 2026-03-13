@@ -19,6 +19,8 @@ class SessionUpsertRequest(BaseModel):
     long_term_status: str
     long_term_result: Optional[str] = None
     final_action_plan: str
+    step: str = 'input'
+    hypotheses: list = []
 
 
 class SessionSummary(BaseModel):
@@ -34,7 +36,7 @@ class SessionSummary(BaseModel):
 
 
 class SessionDetail(BaseModel):
-    """단건 조회용 — 포함 필드: id~updated_at (14개), 제외 필드: created_at"""
+    """단건 조회용 — 포함 필드: id~updated_at, 제외 필드: created_at"""
     model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
     id: str
     title: str
@@ -48,6 +50,8 @@ class SessionDetail(BaseModel):
     long_term_status: str
     long_term_result: Optional[str] = None
     final_action_plan: str
+    step: str = 'input'
+    hypotheses: list = []
     updated_at: datetime
 
 
