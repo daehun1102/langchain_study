@@ -13,23 +13,40 @@
         :key="session.id"
         class="session-card"
         :class="{ active: session.id === activeSessionId }"
-        @click="$emit('load-session', session)"
+        @click="$emit('load-session', session.id)"
       >
         <div class="card-top">
-          <span class="product-id">{{ session.productId || '-' }}</span>
+          <!-- 편집 모드 -->
+          <input
+            v-if="editingId === session.id"
+            :ref="el => { if (el) editInputEl = el }"
+            v-model="editTitle"
+            class="title-edit-input"
+            @keydown.enter.prevent="commitEdit(session)"
+            @keydown.escape.prevent="cancelEdit"
+            @blur="commitEdit(session)"
+            @click.stop
+          />
+          <!-- 표시 모드 -->
+          <span
+            v-else
+            class="session-title"
+            :title="session.title"
+            @dblclick.stop="startEdit(session)"
+          >{{ session.title || session.productId || '-' }}</span>
           <button
             class="btn-delete"
-            :aria-label="`세션 삭제: ${session.productId || session.id}`"
-            :title="`세션 삭제: ${session.productId || session.id}`"
+            :aria-label="`세션 삭제: ${session.title || session.id}`"
+            :title="`세션 삭제: ${session.title || session.id}`"
             @click.stop="$emit('delete-session', session.id)"
           >🗑</button>
         </div>
-        <p class="defect-desc">{{ truncate(session.defectDescription) }}</p>
+        <p class="defect-desc">{{ truncate(session.hypothesis) }}</p>
         <div class="card-bottom">
           <span class="agent-icons">
             <span v-for="agent in ranAgents(session)" :key="agent.key">{{ agent.icon }}</span>
           </span>
-          <span class="timestamp">{{ formatDate(session.timestamp) }}</span>
+          <span class="timestamp">{{ formatDate(session.updatedAt) }}</span>
         </div>
       </button>
     </div>
@@ -37,14 +54,42 @@
 </template>
 
 <script setup>
+import { ref, nextTick } from 'vue'
 import { AGENT_CONFIG } from '../composables/useDefectChat.js'
 
 const props = defineProps({
   sessions: { type: Array, default: () => [] },
   activeSessionId: { type: [String, null], default: null },
 })
-defineEmits(['new-analysis', 'load-session', 'delete-session'])
+const emit = defineEmits(['new-analysis', 'load-session', 'delete-session', 'update-title'])
 
+// ── 인라인 제목 편집 상태 ───────────────────────────────────────────────────
+const editingId = ref(null)
+const editTitle = ref('')
+let editInputEl = null
+
+async function startEdit(session) {
+  editingId.value = session.id
+  editTitle.value = session.title
+  await nextTick()
+  editInputEl?.focus()
+  editInputEl?.select()
+}
+
+async function commitEdit(session) {
+  if (editingId.value !== session.id) return
+  editingId.value = null
+  const newTitle = editTitle.value.trim()
+  if (newTitle && newTitle !== session.title) {
+    emit('update-title', { id: session.id, title: newTitle })
+  }
+}
+
+function cancelEdit() {
+  editingId.value = null
+}
+
+// ── 헬퍼 ──────────────────────────────────────────────────────────────────
 function truncate(str) {
   if (!str) return '-'
   return str.length > 32 ? str.slice(0, 32) + '...' : str
@@ -130,7 +175,6 @@ function ranAgents(session) {
   justify-content: space-between;
   margin-bottom: 4px;
 }
-.product-id { font-size: 0.85rem; color: #93c5fd; font-weight: 600; }
 
 .btn-delete {
   background: none;
@@ -148,4 +192,28 @@ function ranAgents(session) {
 .card-bottom { display: flex; align-items: center; justify-content: space-between; }
 .agent-icons { font-size: 0.9rem; letter-spacing: 2px; }
 .timestamp { font-size: 0.72rem; color: #4b5563; }
+
+.session-title {
+  font-size: 0.82rem;
+  color: #cbd5e1;
+  font-weight: 500;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: default;
+}
+.session-title:hover { color: #e2e8f0; }
+
+.title-edit-input {
+  flex: 1;
+  background: #1e293b;
+  border: 1px solid #3b82f6;
+  border-radius: 4px;
+  color: #e0e0e0;
+  font-size: 0.82rem;
+  padding: 1px 6px;
+  outline: none;
+  min-width: 0;
+}
 </style>
