@@ -33,3 +33,50 @@ export async function fetchDocuments() {
 export async function deleteDocument(docId) {
   await fetch(`${BASE}/documents/${docId}`, { method: 'DELETE' })
 }
+
+// ── 세션 CRUD ───────────────────────────────────────────────────────────────
+
+export async function fetchSessions() {
+  const res = await fetch(`${BASE}/sessions`)
+  if (!res.ok) throw new Error(await res.text())
+  return res.json()
+}
+
+export async function getSession(id) {
+  const res = await fetch(`${BASE}/sessions/${id}`)
+  if (!res.ok) {
+    const err = new Error(await res.text())
+    err.status = res.status
+    throw err
+  }
+  return res.json()
+}
+
+export async function upsertSession(id, payload) {
+  const res = await fetch(`${BASE}/sessions/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  if (!res.ok) throw new Error(await res.text())
+  return res.json()
+}
+
+export async function deleteSession(id) {
+  const res = await fetch(`${BASE}/sessions/${id}`, { method: 'DELETE' })
+  if (!res.ok) throw new Error(await res.text())
+}
+
+export async function updateSessionTitle(id, title) {
+  const res = await fetch(`${BASE}/sessions/${id}/title`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ title }),
+  })
+  if (!res.ok) {
+    const err = new Error(await res.text())
+    err.status = res.status
+    throw err
+  }
+  return res.json()
+}
