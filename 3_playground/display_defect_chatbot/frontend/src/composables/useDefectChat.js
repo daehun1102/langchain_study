@@ -1,6 +1,14 @@
 // display_defect_chatbot/frontend/src/composables/useDefectChat.js
-import { ref, reactive, watch, computed } from 'vue'
-import { callAgent, getBgStatus } from '../api/defectApi.js'
+import { ref, reactive, watch, computed, onMounted } from 'vue'
+import {
+  callAgent,
+  getBgStatus,
+  fetchSessions as apiFetchSessions,
+  getSession as apiGetSession,
+  upsertSession as apiUpsertSession,
+  deleteSession as apiDeleteSession,
+  updateSessionTitle as apiUpdateSessionTitle,
+} from '../api/defectApi.js'
 
 function uuidv4() {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
@@ -80,78 +88,119 @@ export function useDefectChat() {
     }
   }
 
-  // --- 신규: 분석 이력 세션 ---
-  // { id, productId, defectDescription, hypothesis, timestamp, agentResults, chatMessages }
+  // --- 분석 이력 세션 ---
   const sessions = ref([])
   const activeSessionId = ref(null)
 
-  // localStorage 초기 로드
-  try {
-    const saved = localStorage.getItem('defect_sessions')
-    if (saved) sessions.value = JSON.parse(saved)
-  } catch (_) {}
-
-  // sessions 변경 시 localStorage 동기화
-  watch(sessions, (val) => {
+  // 앱 마운트 시 DB에서 세션 목록 로드
+  onMounted(async () => {
     try {
-      localStorage.setItem('defect_sessions', JSON.stringify(val))
-    } catch (_) {}
-  }, { deep: true })
+      sessions.value = await apiFetchSessions()
+    } catch (_) {
+      sessions.value = []
+    }
+  })
 
   // --- 세션 저장 (에이전트 완료 후 자동 호출) ---
-  function saveCurrentSession() {
+  async function saveCurrentSession() {
     const id = sessionId.value
-    const existing = sessions.value.findIndex(s => s.id === id)
-    const record = {
-      id,
+    const existing = sessions.value.find(s => s.id === id)
+    const title = existing?.title
+      || (() => {
+           const base = selectedHypothesis.value
+             ? selectedHypothesis.value.slice(0, 30)
+             : form.defectDescription.slice(0, 30)
+           return `${form.productId || 'Unknown'} — ${base || '새 분석'}`
+         })()
+
+    const payload = {
+      title,
       productId: form.productId,
       defectDescription: form.defectDescription,
       hypothesis: selectedHypothesis.value,
-      timestamp: new Date().toISOString(),
       agentResults: JSON.parse(JSON.stringify(agentResults)),
       chatMessages: JSON.parse(JSON.stringify(chatMessages.value)),
       enabledAgents: { ...enabledAgents },
-      longTermTaskId: longTermTaskId.value,   // ← add this line
+      longTermTaskId: longTermTaskId.value,
       longTermStatus: longTermStatus.value,
       longTermResult: longTermResult.value,
+      finalActionPlan: finalActionPlan.value,
     }
-    if (existing >= 0) {
-      sessions.value[existing] = record
-    } else {
-      sessions.value.unshift(record)
+
+    try {
+      const summary = await apiUpsertSession(id, payload)
+      const idx = sessions.value.findIndex(s => s.id === id)
+      if (idx >= 0) {
+        sessions.value[idx] = summary
+      } else {
+        sessions.value.unshift(summary)
+      }
+      activeSessionId.value = id
+    } catch (e) {
+      error.value = `세션 저장 실패: ${e.message}`
     }
-    activeSessionId.value = id
   }
 
   // --- 세션 삭제 ---
-  function deleteSession(id) {
-    sessions.value = sessions.value.filter(s => s.id !== id)
-    if (activeSessionId.value === id) {
-      activeSessionId.value = null
+  async function deleteSession(id) {
+    try {
+      await apiDeleteSession(id)
+      sessions.value = sessions.value.filter(s => s.id !== id)
+      if (activeSessionId.value === id) {
+        activeSessionId.value = null
+      }
+    } catch (e) {
+      error.value = `세션 삭제 실패: ${e.message}`
     }
   }
 
-  // --- 세션 불러오기 (왼쪽 패널 클릭 시) ---
-  function loadSession(session) {
-    // 다른 세션으로 전환 시 기존 폴링 즉시 중단 (세션 간 격리 핵심)
+  // --- 세션 불러오기 (LeftPanel 클릭 시 ID로 호출) ---
+  async function loadSession(targetId) {
     if (pollTimer.value) { clearInterval(pollTimer.value); pollTimer.value = null }
 
-    activeSessionId.value = session.id
-    sessionId.value = session.id
-    form.productId = session.productId
-    form.defectDescription = session.defectDescription
-    selectedHypothesis.value = session.hypothesis
-    chatMessages.value = session.chatMessages || []
-    Object.assign(agentResults, session.agentResults)
-    if (session.enabledAgents) Object.assign(enabledAgents, session.enabledAgents)
-    longTermTaskId.value = session.longTermTaskId || null
-    longTermStatus.value = session.longTermStatus || 'PENDING'
-    longTermResult.value = session.longTermResult || null
-    step.value = 'result'
+    try {
+      const session = await apiGetSession(targetId)
 
-    // PENDING + taskId 있으면 즉시 체크 후 필요 시 폴링 재개
-    if (longTermTaskId.value && longTermStatus.value === 'PENDING') {
-      resumePollBgStatus(longTermTaskId.value)
+      activeSessionId.value = session.id
+      sessionId.value = session.id
+      form.productId = session.productId
+      form.defectDescription = session.defectDescription
+      selectedHypothesis.value = session.hypothesis
+      chatMessages.value = session.chatMessages || []
+      // 이전 세션 결과 잔존 방지: 전체 초기화 후 복원
+      AGENT_CONFIG.forEach(a => { agentResults[a.key] = null })
+      Object.assign(agentResults, session.agentResults)
+      if (session.enabledAgents) Object.assign(enabledAgents, session.enabledAgents)
+      longTermTaskId.value = session.longTermTaskId || null
+      longTermStatus.value = session.longTermStatus || 'PENDING'
+      longTermResult.value = session.longTermResult || null
+      finalActionPlan.value = session.finalActionPlan || ''
+      step.value = 'result'
+
+      if (longTermTaskId.value && longTermStatus.value === 'PENDING') {
+        resumePollBgStatus(longTermTaskId.value)
+      }
+    } catch (e) {
+      if (e.status === 404) {
+        sessions.value = sessions.value.filter(s => s.id !== targetId)
+      }
+      error.value = `세션 로드 실패: ${e.message}`
+    }
+  }
+
+  // --- 세션 제목 수정 ---
+  async function updateSessionTitle(id, newTitle) {
+    try {
+      const summary = await apiUpdateSessionTitle(id, newTitle)
+      const idx = sessions.value.findIndex(s => s.id === id)
+      if (idx >= 0) {
+        sessions.value[idx] = { ...sessions.value[idx], title: summary.title }
+      }
+    } catch (e) {
+      if (e.status === 404) {
+        sessions.value = sessions.value.filter(s => s.id !== id)
+      }
+      throw e  // LeftPanel이 원래 title로 복원할 수 있도록 re-throw
     }
   }
 
@@ -341,6 +390,6 @@ export function useDefectChat() {
     userEmail,
     sessions, activeSessionId,
     startAnalysis, selectHypothesis, goBackToHypotheses, runAgents, toggleAgent,
-    saveCurrentSession, deleteSession, loadSession, newAnalysis, reset,
+    saveCurrentSession, deleteSession, loadSession, updateSessionTitle, newAnalysis, reset,
   }
 }
