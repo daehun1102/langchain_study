@@ -44,13 +44,7 @@
             @click.stop="$emit('delete-session', session.id)"
           >🗑</button>
         </div>
-        <p class="defect-desc">{{ truncate(session.hypothesis) }}</p>
-        <div class="card-bottom">
-          <span class="agent-icons">
-            <span v-for="agent in ranAgents(session)" :key="agent.key">{{ agent.icon }}</span>
-          </span>
-          <span class="timestamp">{{ formatDate(session.updatedAt) }}</span>
-        </div>
+        <div class="card-time">{{ formatDate(session.updatedAt) }}</div>
       </div>
     </div>
   </aside>
@@ -58,7 +52,6 @@
 
 <script setup>
 import { ref, nextTick } from 'vue'
-import { AGENT_CONFIG } from '../composables/useDefectChat.js'
 
 const props = defineProps({
   sessions: { type: Array, default: () => [] },
@@ -92,21 +85,12 @@ function cancelEdit() {
   editingId.value = null
 }
 
-// ── 헬퍼 ──────────────────────────────────────────────────────────────────
-function truncate(str) {
-  if (!str) return '-'
-  return str.length > 32 ? str.slice(0, 32) + '...' : str
-}
-
 function formatDate(iso) {
   if (!iso) return ''
   const d = new Date(iso)
   return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
 }
 
-function ranAgents(session) {
-  return AGENT_CONFIG.filter(a => session.agentResults?.[a.key])
-}
 </script>
 
 <style scoped>
@@ -185,11 +169,7 @@ function ranAgents(session) {
 }
 .btn-delete:hover { opacity: 1; }
 
-.defect-desc { font-size: 0.78rem; color: #6b7280; margin-bottom: 8px; line-height: 1.4; }
-
-.card-bottom { display: flex; align-items: center; justify-content: space-between; }
-.agent-icons { font-size: 0.9rem; letter-spacing: 2px; }
-.timestamp { font-size: 0.72rem; color: #4b5563; }
+.card-time { font-size: 0.72rem; color: #4b5563; margin-top: 6px; }
 
 .session-title {
   font-size: 0.82rem;
