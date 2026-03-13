@@ -8,12 +8,15 @@
     <div class="session-list">
       <p v-if="sessions.length === 0" class="empty-hint">분석 이력이 없습니다.</p>
 
-      <button
+      <div
         v-for="session in sessions"
         :key="session.id"
         class="session-card"
         :class="{ active: session.id === activeSessionId }"
+        role="button"
+        tabindex="0"
         @click="$emit('load-session', session.id)"
+        @keydown.enter.prevent="$emit('load-session', session.id)"
       >
         <div class="card-top">
           <!-- 편집 모드 -->
@@ -48,7 +51,7 @@
           </span>
           <span class="timestamp">{{ formatDate(session.updatedAt) }}</span>
         </div>
-      </button>
+      </div>
     </div>
   </aside>
 </template>
@@ -156,11 +159,6 @@ function ranAgents(session) {
   padding: 12px;
   cursor: pointer;
   transition: border-color 0.15s;
-  width: 100%;
-  text-align: left;
-  color: inherit;
-  font: inherit;
-  display: block;
 }
 .session-card:hover { border-color: #374151; }
 .session-card:focus-visible {
