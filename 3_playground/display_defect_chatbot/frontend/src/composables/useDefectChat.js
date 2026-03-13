@@ -105,13 +105,16 @@ export function useDefectChat() {
   async function saveCurrentSession() {
     const id = sessionId.value
     const existing = sessions.value.find(s => s.id === id)
-    const title = existing?.title
-      || (() => {
+    // '새 분석' 플레이스홀더는 실제 데이터가 생기면 재생성, 사용자 편집 제목은 보존
+    const isPlaceholder = !existing?.title || existing.title === '새 분석'
+    const title = isPlaceholder
+      ? (() => {
            const base = selectedHypothesis.value
              ? selectedHypothesis.value.slice(0, 30)
              : form.defectDescription.slice(0, 30)
            return `${form.productId || 'Unknown'} — ${base || '새 분석'}`
          })()
+      : existing.title
 
     const payload = {
       title,
@@ -218,24 +221,29 @@ export function useDefectChat() {
     }
   }
 
-  // --- 새 분석 시작 ---
-  function newAnalysis() {
+  // --- 새 분析 시작 ---
+  async function newAnalysis() {
     if (pollTimer.value) { clearInterval(pollTimer.value); pollTimer.value = null }
-    longTermTaskId.value = null   // ← add this line
+    longTermTaskId.value = null
     sessionId.value = uuidv4()
     activeSessionId.value = null
     step.value = 'input'
     hypotheses.value = []
     selectedHypothesis.value = ''
     loading.value = false
+    error.value = null
     longTermStatus.value = 'PENDING'
     longTermResult.value = null
     chatMessages.value = []
+    form.productId = ''
+    form.defectDescription = ''
     AGENT_CONFIG.forEach(a => {
       enabledAgents[a.key] = a.key !== 'long_term'
       agentLoading[a.key] = false
       agentResults[a.key] = null
     })
+    // 버튼 클릭 즉시 "새 분析" 카드 생성
+    await saveCurrentSession()
   }
 
   async function startAnalysis() {
