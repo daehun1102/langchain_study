@@ -28,6 +28,7 @@
         @new-analysis="newAnalysis"
         @load-session="loadSession"
         @delete-session="deleteSession"
+        @update-title="({ id, title }) => updateSessionTitle(id, title)"
       />
 
       <!-- 오른쪽: 단계별 흐름 + ChatStream -->
@@ -111,7 +112,7 @@ const {
   isChatBlocked,
   userEmail,
   startAnalysis, selectHypothesis, goBackToHypotheses, runAgents, toggleAgent,
-  newAnalysis, loadSession, deleteSession,
+  newAnalysis, loadSession, deleteSession, updateSessionTitle,
   userInput, sendUserMessage,
 } = useDefectChat()
 
