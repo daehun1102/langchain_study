@@ -227,6 +227,8 @@ export function useDefectChat() {
   async function startAnalysis() {
     loading.value = true
     error.value = null
+    // 불량 정보 입력 즉시 세션 카드 생성
+    await saveCurrentSession()
     try {
       const data = await callAgent({
         sessionId: sessionId.value,
@@ -269,9 +271,6 @@ export function useDefectChat() {
       agentLoading[k] = true
       chatMessages.value.push({ id: uuidv4(), agentKey: k, status: 'loading', result: null })
     })
-
-    // 분석 시작 즉시 세션 카드 생성 (LeftPanel에 바로 표시)
-    await saveCurrentSession()
 
     try {
       const data = await callAgent({
