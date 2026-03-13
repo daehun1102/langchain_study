@@ -44,7 +44,10 @@ async def upsert_session(id: str, data: dict) -> dict:
             """),
             params,
         )
-        return dict(result.mappings().first())
+        row = result.mappings().first()
+        if row is None:
+            raise RuntimeError(f"upsert_session: RETURNING produced no row for id={id!r}")
+        return dict(row)
 
 
 async def list_sessions() -> list[dict]:

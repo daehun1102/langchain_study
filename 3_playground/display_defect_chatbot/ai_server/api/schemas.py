@@ -1,4 +1,5 @@
 # ai_server/api/schemas.py
+from datetime import datetime
 from typing import Optional
 
 from pydantic import BaseModel, ConfigDict
@@ -29,7 +30,7 @@ class SessionSummary(BaseModel):
     product_id: str
     hypothesis: str
     agent_results: dict
-    updated_at: str
+    updated_at: datetime
 
 
 class SessionDetail(BaseModel):
@@ -43,11 +44,11 @@ class SessionDetail(BaseModel):
     agent_results: dict
     chat_messages: list
     enabled_agents: dict
-    long_term_task_id: Optional[str]
+    long_term_task_id: Optional[str] = None
     long_term_status: str
-    long_term_result: Optional[str]
+    long_term_result: Optional[str] = None
     final_action_plan: str
-    updated_at: str
+    updated_at: datetime
 
 
 class SessionTitleUpdate(BaseModel):

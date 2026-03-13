@@ -22,7 +22,7 @@ async def list_sessions():
             product_id=r["product_id"],
             hypothesis=r["hypothesis"],
             agent_results=r["agent_results"],
-            updated_at=str(r["updated_at"]),
+            updated_at=r["updated_at"],
         )
         for r in rows
     ]
@@ -46,25 +46,13 @@ async def get_session(id: str):
         long_term_status=row["long_term_status"],
         long_term_result=row["long_term_result"],
         final_action_plan=row["final_action_plan"],
-        updated_at=str(row["updated_at"]),
+        updated_at=row["updated_at"],
     )
 
 
 @router.put("/{id}", response_model=SessionSummary, response_model_by_alias=True)
 async def upsert_session(id: str, body: SessionUpsertRequest):
-    data = {
-        "title": body.title,
-        "product_id": body.product_id,
-        "defect_description": body.defect_description,
-        "hypothesis": body.hypothesis,
-        "agent_results": body.agent_results,
-        "chat_messages": body.chat_messages,
-        "enabled_agents": body.enabled_agents,
-        "long_term_task_id": body.long_term_task_id,
-        "long_term_status": body.long_term_status,
-        "long_term_result": body.long_term_result,
-        "final_action_plan": body.final_action_plan,
-    }
+    data = body.model_dump()
     row = await session_repo.upsert_session(id, data)
     return SessionSummary(
         id=row["id"],
@@ -72,7 +60,7 @@ async def upsert_session(id: str, body: SessionUpsertRequest):
         product_id=row["product_id"],
         hypothesis=row["hypothesis"],
         agent_results=row["agent_results"],
-        updated_at=str(row["updated_at"]),
+        updated_at=row["updated_at"],
     )
 
 
@@ -93,5 +81,5 @@ async def update_session_title(id: str, body: SessionTitleUpdate):
         product_id=row["product_id"],
         hypothesis=row["hypothesis"],
         agent_results=row["agent_results"],
-        updated_at=str(row["updated_at"]),
+        updated_at=row["updated_at"],
     )
