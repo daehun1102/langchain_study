@@ -163,18 +163,29 @@ export function useDefectChat() {
 
       activeSessionId.value = session.id
       sessionId.value = session.id
-      form.productId = session.productId
-      form.defectDescription = session.defectDescription
-      selectedHypothesis.value = session.hypothesis
-      chatMessages.value = session.chatMessages || []
-      // 이전 세션 결과 잔존 방지: 전체 초기화 후 복원
-      AGENT_CONFIG.forEach(a => { agentResults[a.key] = null })
-      Object.assign(agentResults, session.agentResults)
-      if (session.enabledAgents) Object.assign(enabledAgents, session.enabledAgents)
+      form.productId = session.productId || ''
+      form.defectDescription = session.defectDescription || ''
+      selectedHypothesis.value = session.hypothesis || ''
+      chatMessages.value = Array.isArray(session.chatMessages) ? session.chatMessages : []
+      userInput.value = ''
+
+      // 이전 세션 결과 완전 교체 (Object.assign shallow merge 잔존 방지)
+      AGENT_CONFIG.forEach(a => {
+        agentResults[a.key] = session.agentResults?.[a.key] ?? null
+        agentLoading[a.key] = false
+      })
+
+      // enabledAgents 완전 교체
+      AGENT_CONFIG.forEach(a => {
+        enabledAgents[a.key] = session.enabledAgents?.[a.key] ?? (a.key !== 'long_term')
+      })
+
       longTermTaskId.value = session.longTermTaskId || null
       longTermStatus.value = session.longTermStatus || 'PENDING'
       longTermResult.value = session.longTermResult || null
       finalActionPlan.value = session.finalActionPlan || ''
+      loading.value = false
+      error.value = null
       step.value = 'result'
 
       if (longTermTaskId.value && longTermStatus.value === 'PENDING') {
