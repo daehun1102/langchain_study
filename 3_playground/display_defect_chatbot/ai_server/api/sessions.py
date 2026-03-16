@@ -46,6 +46,8 @@ async def get_session(id: str):
         long_term_status=row["long_term_status"],
         long_term_result=row["long_term_result"],
         final_action_plan=row["final_action_plan"],
+        step=row["step"],
+        hypotheses=row["hypotheses"],
         updated_at=row["updated_at"],
     )
 

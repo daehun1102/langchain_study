@@ -41,7 +41,7 @@ export function useAnalysisFlow(chat, email) {
     () => enabledAgents.long_term && longTermStatus.value === 'PENDING'
   )
 
-  // --- 분析 함수들 ---
+  // --- 분석 함수들 ---
 
   async function startAnalysis() {
     loading.value = true

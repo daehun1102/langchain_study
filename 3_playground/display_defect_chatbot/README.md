@@ -260,7 +260,7 @@ cp .env.example .env
 
 # 3. ai_server 실행
 pip install -r ai_server/requirements.txt
-uvicorn ai_server.server:app --host 0.0.0.0 --port 8000
+uvicorn ai_server.server:app --host 0.0.0.0 --port 8000 --loop asyncio:SelectorEventLoop
 
 # 4. frontend 실행
 cd frontend

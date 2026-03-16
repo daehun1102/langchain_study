@@ -3,7 +3,7 @@
 // 각 기능의 구현은 아래 파일들을 참조하세요:
 //   - useUserEmail.js     : 이메일 설정
 //   - useChatMessages.js  : 채팅 메시지 배열
-//   - useAnalysisFlow.js  : 분析 흐름, 에이전트, 폴링
+//   - useAnalysisFlow.js  : 분석 흐름, 에이전트, 폴링
 //   - useSessionManager.js: 세션 CRUD, 저장/불러오기
 import { useUserEmail }      from './useUserEmail.js'
 import { useChatMessages }   from './useChatMessages.js'

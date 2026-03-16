@@ -31,7 +31,8 @@ class VectorStoreManager:
                 overwrite_existing=False,
             )
         except ProgrammingError as e:
-            if "already exists" not in str(e.orig or e):
+            err_str = str(e.orig or e)
+            if "already exists" not in err_str and "이미 있습" not in err_str and "DuplicateTableError" not in err_str:
                 raise
         vector_store = await PGVectorStore.create(
             engine=pg_engine,

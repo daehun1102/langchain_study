@@ -27,13 +27,13 @@ export function useSessionManager(analysis, chat) {
     const id = analysis.sessionId.value
     const existing = sessions.value.find(s => s.id === id)
 
-    const isPlaceholder = !existing?.title || existing.title === '새 분析'
+    const isPlaceholder = !existing?.title || existing.title === '새 분석'
     const title = isPlaceholder
       ? (() => {
           const base = analysis.selectedHypothesis.value
             ? analysis.selectedHypothesis.value.slice(0, 30)
             : analysis.form.defectDescription.slice(0, 30)
-          return `${analysis.form.productId || 'Unknown'} — ${base || '새 분析'}`
+          return `${analysis.form.productId || 'Unknown'} — ${base || '새 분석'}`
         })()
       : existing.title
 
