@@ -8,12 +8,75 @@
 
     <div class="bubbles-wrap">
       <template v-for="msg in messages" :key="msg.id">
-        <!-- 사용자 입력 메시지 -->
+
+        <!-- 사용자 입력 메시지 (기존 그대로) -->
         <div v-if="msg.agentKey === 'user'" class="user-bubble">
           <span class="user-bubble-text">{{ msg.userText }}</span>
         </div>
 
-        <!-- 에이전트 결과 메시지 -->
+        <!-- system 계열 버블 (신규) -->
+        <div v-else-if="msg.agentKey === 'system'" class="system-bubble">
+
+          <!-- 단순 안내 텍스트 -->
+          <template v-if="msg.status === 'system'">
+            <p class="system-text">{{ msg.text }}</p>
+          </template>
+
+          <!-- 가설 선택 버튼 목록 -->
+          <template v-else-if="msg.status === 'hypothesis_select'">
+            <p class="system-label">가설을 선택하세요</p>
+            <div class="hypothesis-btn-list">
+              <button
+                v-for="(h, i) in msg.hypotheses"
+                :key="i"
+                class="hypothesis-btn"
+                :class="{ done: msg.done }"
+                :disabled="msg.done"
+                @click="!msg.done && $emit('select-hypothesis', h)"
+              >
+                {{ h.text }}
+              </button>
+            </div>
+          </template>
+
+          <!-- 에이전트 선택 체크박스 + 실행 버튼 -->
+          <template v-else-if="msg.status === 'agent_select'">
+            <p class="system-label">분석할 에이전트를 선택하세요</p>
+            <div class="agent-check-list">
+              <label
+                v-for="a in msg.agents"
+                :key="a.key"
+                class="agent-check-item"
+                :class="{ done: msg.done }"
+              >
+                <input
+                  type="checkbox"
+                  :checked="msg.enabledAgents[a.key]"
+                  :disabled="msg.done"
+                  @change="msg.enabledAgents[a.key] = $event.target.checked"
+                />
+                <span class="agent-check-icon">{{ a.icon }}</span>
+                <span class="agent-check-label">{{ a.label }}</span>
+              </label>
+            </div>
+            <button
+              class="run-agents-btn"
+              :disabled="msg.done"
+              @click="!msg.done && $emit('run-agents', msg)"
+            >
+              {{ msg.done ? '실행됨' : '분석 실행' }}
+            </button>
+          </template>
+
+          <!-- 최종 액션 플랜 -->
+          <template v-else-if="msg.status === 'final_plan'">
+            <p class="system-label">최종 액션 플랜</p>
+            <div class="analysis-text" v-html="renderMarkdown(msg.text)"></div>
+          </template>
+
+        </div>
+
+        <!-- 에이전트 결과 메시지 (기존 그대로) -->
         <div
           v-else
           class="chat-bubble"
@@ -22,22 +85,18 @@
           <div class="bubble-header">
             <span class="agent-dot">{{ agentIcon(msg.agentKey) }}</span>
             <span class="agent-name">{{ agentLabel(msg.agentKey) }}</span>
-
             <span v-if="msg.status === 'loading'" class="status-loading" aria-label="분석 중">
               <span></span><span></span><span></span>
             </span>
             <span v-else-if="msg.status === 'done'" class="status-badge done">완료</span>
             <span v-else-if="msg.status === 'error'" class="status-badge error">오류</span>
           </div>
-
           <div v-if="msg.status === 'loading'" class="bubble-body loading-body">
             <span class="loading-text">데이터 분석 중</span>
             <span class="loading-dots"><span></span><span></span><span></span></span>
           </div>
-
           <div v-else-if="msg.status === 'done' && msg.result" class="bubble-body">
             <div class="analysis-text" v-html="renderMarkdown(msg.result.analysis)"></div>
-
             <template v-if="msg.result.suspectRows?.length">
               <div class="grid-header">
                 <span class="grid-label">의심 데이터</span>
@@ -53,12 +112,12 @@
             </template>
             <p v-else class="no-data">의심 데이터 없음</p>
           </div>
-
           <div v-else-if="msg.status === 'error'" class="bubble-body error-body">
             <span class="error-badge">!</span>
             분석 중 오류가 발생했습니다.
           </div>
         </div>
+
       </template>
     </div>
   </div>
@@ -83,6 +142,8 @@ const props = defineProps({
   messages: { type: Array, default: () => [] },
 })
 
+defineEmits(['select-hypothesis', 'run-agents'])
+
 const streamEl = ref(null)
 
 watch(() => props.messages.length, async () => {
@@ -92,42 +153,11 @@ watch(() => props.messages.length, async () => {
 
 const defaultColDef = { resizable: true, sortable: true, filter: true, flex: 1, minWidth: 80 }
 
-const COL_DEFS = {
-  process_history: [
-    { field: 'process_step', headerName: '공정단계' },
-    { field: 'result', headerName: '결과', cellClass: p => p.value === 'FAIL' ? 'cell-fail' : 'cell-pass' },
-    { field: 'equipment_id', headerName: '설비ID' },
-    { field: 'operator_id', headerName: '작업자' },
-    { field: 'measured_at', headerName: '측정시간' },
-  ],
-  return_history: [
-    { field: 'return_reason', headerName: '반송 사유' },
-    { field: 'severity', headerName: '심각도', cellClass: p => p.value === 'HIGH' ? 'cell-fail' : p.value === 'LOW' ? 'cell-pass' : 'cell-warn' },
-    { field: 'quantity', headerName: '수량' },
-    { field: 'return_date', headerName: '반송일' },
-  ],
-  test_history: [
-    { field: 'test_type', headerName: '테스트 유형' },
-    { field: 'result', headerName: '결과', cellClass: p => p.value === 'FAIL' ? 'cell-fail' : 'cell-pass' },
-    { field: 'measured_value', headerName: '측정값' },
-    { field: 'spec_min', headerName: '최소규격' },
-    { field: 'spec_max', headerName: '최대규격' },
-    { field: 'tested_at', headerName: '측정시간' },
-  ],
-}
-
-function getColDefs(agentKey) { return COL_DEFS[agentKey] || [] }
-
-const AGENT_COLORS = {
-  process_history: '#00c8ff',
-  return_history:  '#f59e0b',
-  test_history:    '#10b981',
-  long_term:       '#a78bfa',
-}
-
-function agentLabel(agentKey) { return AGENT_CONFIG.find(a => a.key === agentKey)?.label || agentKey }
-function agentIcon(agentKey)  { return AGENT_CONFIG.find(a => a.key === agentKey)?.icon  || '🤖' }
-function agentColor(agentKey) { return AGENT_COLORS[agentKey] || '#60a5fa' }
+function agentConf(key)  { return AGENT_CONFIG.find(a => a.key === key) }
+function agentLabel(key) { return agentConf(key)?.label   || key }
+function agentIcon(key)  { return agentConf(key)?.icon    || '🤖' }
+function agentColor(key) { return agentConf(key)?.color   || '#60a5fa' }
+function getColDefs(key) { return agentConf(key)?.colDefs || [] }
 </script>
 
 <style>
@@ -448,5 +478,119 @@ function agentColor(agentKey) { return AGENT_COLORS[agentKey] || '#60a5fa' }
   line-height: 1.6;
   white-space: pre-wrap;
   word-break: break-word;
+}
+
+/* system 버블 */
+.system-bubble {
+  align-self: flex-start;
+  max-width: 88%;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid #3b82f6;
+  border-radius: 8px;
+  padding: 12px 16px;
+  animation: bubbleIn 0.28s ease;
+}
+
+.system-text {
+  font-size: 0.84rem;
+  color: var(--text-2);
+  line-height: 1.7;
+}
+
+.system-label {
+  font-size: 0.72rem;
+  color: var(--text-3);
+  font-family: var(--mono);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+
+.hypothesis-btn-list {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.hypothesis-btn {
+  background: rgba(59, 130, 246, 0.06);
+  border: 1px solid rgba(59, 130, 246, 0.25);
+  border-radius: 7px;
+  padding: 9px 14px;
+  color: #93c5fd;
+  font-size: 0.83rem;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  line-height: 1.5;
+}
+
+.hypothesis-btn:hover:not(:disabled) {
+  background: rgba(59, 130, 246, 0.14);
+  border-color: rgba(59, 130, 246, 0.5);
+}
+
+.hypothesis-btn.done,
+.hypothesis-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.agent-check-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.agent-check-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-size: 0.83rem;
+  color: var(--text-2);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 6px 12px;
+  transition: border-color 0.15s;
+}
+
+.agent-check-item:not(.done):hover {
+  border-color: var(--border-mid);
+}
+
+.agent-check-item.done {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.agent-check-item input[type="checkbox"] {
+  accent-color: #3b82f6;
+  cursor: pointer;
+}
+
+.agent-check-icon { font-size: 0.9rem; }
+.agent-check-label { font-size: 0.82rem; }
+
+.run-agents-btn {
+  background: #1d4ed8;
+  color: #fff;
+  border: none;
+  border-radius: 7px;
+  padding: 8px 20px;
+  font-size: 0.84rem;
+  cursor: pointer;
+  transition: background 0.18s, opacity 0.18s;
+  font-weight: 600;
+}
+
+.run-agents-btn:hover:not(:disabled) { background: #2563eb; }
+
+.run-agents-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 </style>
