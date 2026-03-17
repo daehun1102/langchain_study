@@ -4,10 +4,56 @@ import { callAgent, getBgStatus } from '../api/defectApi.js'
 import { uuidv4 } from './utils/uuid.js'
 
 export const AGENT_CONFIG = [
-  { key: 'process_history', label: '공정이력',  icon: '⚙️', desc: '제품 제조 공정 단계별 이력을 조회하고 FAIL 항목 및 이상 공정을 분석합니다.' },
-  { key: 'return_history',  label: '반송이력',  icon: '↩️', desc: '고객·공정 반송 이력을 조회하고 가설과 연관된 반복 불량 패턴을 분석합니다.' },
-  { key: 'test_history',    label: '테스트이력', icon: '🧪', desc: '전기·광학 테스트 결과를 조회하고 규격 초과 항목을 식별합니다.' },
-  { key: 'long_term',       label: '장기이력',  icon: '📊', desc: '동일 모델 최근 6개월 불량 통계를 분석합니다. (백그라운드 실행)' },
+  {
+    key: 'process_history',
+    label: '공정이력',
+    icon: '⚙️',
+    desc: '제품 제조 공정 단계별 이력을 조회하고 FAIL 항목 및 이상 공정을 분석합니다.',
+    color: '#00c8ff',
+    colDefs: [
+      { field: 'process_step', headerName: '공정단계' },
+      { field: 'result', headerName: '결과', cellClass: p => p.value === 'FAIL' ? 'cell-fail' : 'cell-pass' },
+      { field: 'equipment_id', headerName: '설비ID' },
+      { field: 'operator_id', headerName: '작업자' },
+      { field: 'measured_at', headerName: '측정시간' },
+    ],
+  },
+  {
+    key: 'return_history',
+    label: '반송이력',
+    icon: '↩️',
+    desc: '고객·공정 반송 이력을 조회하고 가설과 연관된 반복 불량 패턴을 분석합니다.',
+    color: '#f59e0b',
+    colDefs: [
+      { field: 'return_reason', headerName: '반송 사유' },
+      { field: 'severity', headerName: '심각도', cellClass: p => p.value === 'HIGH' ? 'cell-fail' : p.value === 'LOW' ? 'cell-pass' : 'cell-warn' },
+      { field: 'quantity', headerName: '수량' },
+      { field: 'return_date', headerName: '반송일' },
+    ],
+  },
+  {
+    key: 'test_history',
+    label: '테스트이력',
+    icon: '🧪',
+    desc: '전기·광학 테스트 결과를 조회하고 규격 초과 항목을 식별합니다.',
+    color: '#10b981',
+    colDefs: [
+      { field: 'test_type', headerName: '테스트 유형' },
+      { field: 'result', headerName: '결과', cellClass: p => p.value === 'FAIL' ? 'cell-fail' : 'cell-pass' },
+      { field: 'measured_value', headerName: '측정값' },
+      { field: 'spec_min', headerName: '최소규격' },
+      { field: 'spec_max', headerName: '최대규격' },
+      { field: 'tested_at', headerName: '측정시간' },
+    ],
+  },
+  {
+    key: 'long_term',
+    label: '장기이력',
+    icon: '📊',
+    desc: '동일 모델 최근 6개월 불량 통계를 분석합니다. (백그라운드 실행)',
+    color: '#a78bfa',
+    colDefs: [],
+  },
 ]
 
 export function useAnalysisFlow(chat, email) {
@@ -75,10 +121,10 @@ export function useAnalysisFlow(chat, email) {
     step.value = 'hypotheses'
   }
 
-  async function runAgents() {
+  async function runAgents({ clearMessages = true } = {}) {
     step.value = 'result'
     loading.value = true
-    chat.chatMessages.value = []
+    if (clearMessages) chat.chatMessages.value = []
 
     const enabledKeys = AGENT_CONFIG.map(a => a.key).filter(k => enabledAgents[k])
     enabledKeys.forEach(k => {
