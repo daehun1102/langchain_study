@@ -39,8 +39,8 @@ export function useDefectChat() {
     await session.saveCurrentSession()
   }
 
-  const runAgents = async () => {
-    await analysis.runAgents()
+  const runAgents = async (opts) => {
+    await analysis.runAgents(opts)
     await session.saveCurrentSession()
   }
 
