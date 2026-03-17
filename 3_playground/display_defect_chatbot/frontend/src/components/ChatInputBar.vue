@@ -124,7 +124,7 @@ watch(
       })
     }
   },
-  { immediate: true, deep: true }
+  { immediate: true }
 )
 
 const selectedKeys = computed(() =>

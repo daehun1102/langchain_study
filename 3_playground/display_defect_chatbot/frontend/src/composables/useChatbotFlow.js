@@ -101,6 +101,9 @@ export function useChatbotFlow() {
     const msg = base.chatMessages.value.findLast(m => m.status === 'agent_select')
     if (msg) msg.done = true
 
+    // 즉시 inputMode를 text로 전환 — 이중 제출 방지
+    inputMode.value = { type: 'text', placeholder: '분석 중…' }
+
     // 선택된 에이전트를 user 버블로 표시
     const labels = AGENT_CONFIG
       .filter(a => selectedKeys.includes(a.key))
