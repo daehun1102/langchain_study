@@ -63,32 +63,11 @@
             <button class="btn-reset" @click="newAnalysis">새 분석 시작</button>
           </div>
           <ChatStream :messages="chatMessages" />
-          <div class="chat-input-bar">
-            <div v-if="isChatBlocked" class="chat-blocked-notice">
-              ⏳ 장기 이력 분석 완료 후 채팅이 가능합니다
-            </div>
-            <template v-else>
-              <textarea
-                v-model="userInput"
-                class="chat-input"
-                placeholder="결과에 대해 추가 질문을 입력하세요… (Enter로 전송)"
-                rows="1"
-                @keydown.enter.exact.prevent="sendUserMessage"
-                @input="autoResize"
-                ref="chatInputEl"
-              ></textarea>
-              <button
-                class="chat-send-btn"
-                :disabled="!userInput.trim() || loading"
-                @click="sendUserMessage"
-                title="전송"
-              >
-                <svg viewBox="0 0 16 16" fill="none" width="15" height="15">
-                  <path d="M14 8L2 2l3 6-3 6 12-6z" fill="currentColor"/>
-                </svg>
-              </button>
-            </template>
-          </div>
+          <ChatInputBar
+            :mode="{ type: 'text', placeholder: '결과에 대해 추가 질문을 입력하세요… (Enter로 전송)' }"
+            :disabled="isChatBlocked || loading"
+            @submit="val => { userInput.value = val; sendUserMessage() }"
+          />
         </template>
       </main>
     </div>
@@ -103,6 +82,7 @@ import InputView from './components/InputView.vue'
 import HypothesisSelector from './components/HypothesisSelector.vue'
 import AgentSelector from './components/AgentSelector.vue'
 import ChatStream from './components/ChatStream.vue'
+import ChatInputBar from './components/ChatInputBar.vue'
 
 const {
   step, loading, error, form, hypotheses, selectedHypothesis,
@@ -123,13 +103,6 @@ const emailSaved = computed(() => !!userEmail.value && userEmail.value === saved
 function saveEmail() {
   savedEmailValue.value = userEmail.value
   try { localStorage.setItem('user_email', userEmail.value || '') } catch (_) {}
-}
-
-
-function autoResize(e) {
-  const el = e.target
-  el.style.height = 'auto'
-  el.style.height = Math.min(el.scrollHeight, 120) + 'px'
 }
 </script>
 
@@ -196,71 +169,6 @@ body { background: #0f1117; color: #e0e0e0; font-family: 'Segoe UI', sans-serif;
 }
 .btn-reset:hover { background: #4b5563; }
 
-.chat-input-bar {
-  display: flex;
-  align-items: flex-end;
-  gap: 8px;
-  padding: 10px 16px 12px;
-  border-top: 1px solid #2a2d3a;
-  background: #13161f;
-  flex-shrink: 0;
-}
-
-.chat-input {
-  flex: 1;
-  background: #1a1d27;
-  border: 1px solid #2a2d3a;
-  border-radius: 8px;
-  padding: 9px 13px;
-  color: #e0e0e0;
-  font-family: 'Segoe UI', sans-serif;
-  font-size: 0.86rem;
-  resize: none;
-  outline: none;
-  line-height: 1.5;
-  min-height: 38px;
-  max-height: 120px;
-  overflow-y: auto;
-  transition: border-color 0.2s, box-shadow 0.2s;
-}
-
-.chat-input:focus {
-  border-color: #00c8ff;
-  box-shadow: 0 0 0 3px rgba(0, 200, 255, 0.07);
-}
-
-.chat-input::placeholder { color: #3d4a5c; }
-
-.chat-send-btn {
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
-  border: none;
-  background: #00c8ff;
-  color: #060b12;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  flex-shrink: 0;
-  transition: background 0.18s, box-shadow 0.18s, opacity 0.18s;
-}
-
-.chat-send-btn:hover:not(:disabled) {
-  background: #2dd4f0;
-  box-shadow: 0 0 16px rgba(0, 200, 255, 0.3);
-}
-
-.chat-send-btn:disabled { opacity: 0.3; cursor: not-allowed; }
-
-.chat-blocked-notice {
-  flex: 1;
-  text-align: center;
-  color: #6b7280;
-  font-size: 0.82rem;
-  padding: 10px 0;
-  font-style: italic;
-}
 
 .email-setting {
   display: flex;
