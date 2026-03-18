@@ -182,3 +182,7 @@ assets/
 .langgraph_api
 ### Worktrees ###
 .worktrees/
+
+### Local tool configs ###
+.claude/
+.superpowers/

@@ -40,7 +40,16 @@ export function useDefectChat() {
   }
 
   const runAgents = async (opts) => {
-    await analysis.runAgents(opts)
+    // runAgents 내부에서 step='result'는 첫 번째 await 전에 동기적으로 설정됨.
+    // promise를 바로 시작하고 즉시 저장해 세션 전환 시 step 손실 방지.
+    const promise = analysis.runAgents(opts)
+    await session.saveCurrentSession()
+    await promise
+    await session.saveCurrentSession()
+  }
+
+  const sendUserMessage = async () => {
+    await analysis.sendUserMessage()
     await session.saveCurrentSession()
   }
 
@@ -58,6 +67,7 @@ export function useDefectChat() {
     selectHypothesis,
     goBackToHypotheses,
     runAgents,
+    sendUserMessage,
     reset: session.newAnalysis,  // 하위 호환 alias
   }
 }

@@ -1,6 +1,6 @@
 // frontend/src/composables/useAnalysisFlow.js
 import { ref, reactive, computed } from 'vue'
-import { callAgent, getBgStatus } from '../api/defectApi.js'
+import { callAgent, getBgStatus, getSession, upsertSession } from '../api/defectApi.js'
 import { uuidv4 } from './utils/uuid.js'
 
 export const AGENT_CONFIG = [
@@ -201,21 +201,31 @@ export function useAnalysisFlow(chat, email) {
   // --- 백그라운드 폴링 (내부 헬퍼) ---
 
   function pollBgStatus(taskId) {
+    const capturedSessionId = sessionId.value  // 폴링 시작 시점의 세션 ID 스냅샷
     pollTimer.value = setInterval(async () => {
       try {
-        await checkAndHandleBgStatus(taskId)
+        await checkAndHandleBgStatus(taskId, capturedSessionId)
       } catch (e) {
         clearInterval(pollTimer.value); pollTimer.value = null
       }
     }, 3000)
   }
 
-  async function checkAndHandleBgStatus(taskId) {
+  async function checkAndHandleBgStatus(taskId, capturedSessionId) {
     const data = await getBgStatus(taskId)
-    longTermStatus.value = data.status
+    const isStillActive = sessionId.value === capturedSessionId
+
+    if (isStillActive) longTermStatus.value = data.status
 
     if (data.status === 'COMPLETED' || data.status === 'FAILED') {
       if (pollTimer.value) { clearInterval(pollTimer.value); pollTimer.value = null }
+
+      if (!isStillActive) {
+        // 세션 전환 후 완료: UI 건드리지 않고 이전 세션 DB에만 조용히 저장
+        await _saveStaleSessionResult(capturedSessionId, data)
+        return
+      }
+
       longTermResult.value = data.resultText
 
       if (data.status === 'COMPLETED') {
@@ -236,6 +246,37 @@ export function useAnalysisFlow(chat, email) {
     }
   }
 
+  // 세션 전환 후 백그라운드 작업이 완료됐을 때: UI 갱신 없이 DB에만 저장
+  async function _saveStaleSessionResult(targetSessionId, bgData) {
+    try {
+      const session = await getSession(targetSessionId)
+      let finalPlan = session.finalActionPlan || ''
+      if (bgData.status === 'COMPLETED') {
+        const response = await callAgent({
+          sessionId: targetSessionId,
+          action: 'resume_long_term',
+          longTermResult: bgData.resultText || '',
+        })
+        finalPlan = response.finalActionPlan || ''
+      }
+      const updatedAgentResults = {
+        ...(session.agentResults || {}),
+        long_term: bgData.status === 'COMPLETED'
+          ? { suspectRows: [], analysis: bgData.resultText || '' }
+          : null,
+      }
+      await upsertSession(targetSessionId, {
+        ...session,
+        agentResults: updatedAgentResults,
+        longTermStatus: bgData.status,
+        longTermResult: bgData.resultText || null,
+        finalActionPlan: finalPlan,
+      })
+    } catch (e) {
+      console.warn('[_saveStaleSessionResult] 저장 실패:', e)
+    }
+  }
+
   // 폴링 완료 시 자동 저장을 위한 콜백 (root composable에서 주입)
   const _saveCallback = ref(async () => {})
   function _setSaveCallback(fn) { _saveCallback.value = fn }
@@ -251,7 +292,7 @@ export function useAnalysisFlow(chat, email) {
     }
 
     try {
-      await checkAndHandleBgStatus(taskId)
+      await checkAndHandleBgStatus(taskId, capturedSessionId)
     } catch (e) {
       console.warn('[resumePollBgStatus] 즉시 체크 실패:', e)
     }
