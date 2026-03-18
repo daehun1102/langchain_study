@@ -180,3 +180,5 @@ assets/
 
 ### LangGraph ###
 .langgraph_api
+### Worktrees ###
+.worktrees/
