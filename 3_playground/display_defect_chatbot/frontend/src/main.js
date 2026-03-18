@@ -1,8 +1,4 @@
 import { createApp } from 'vue'
-import App from './App.vue'
-import ChatbotApp from './ChatbotApp.vue'
+import RootApp from './RootApp.vue'
 
-const mode = new URLSearchParams(location.search).get('mode')
-const Root = mode === 'chat' ? ChatbotApp : App
-
-createApp(Root).mount('#app')
+createApp(RootApp).mount('#app')
